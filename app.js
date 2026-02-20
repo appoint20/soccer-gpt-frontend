@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost:5165/api";
+const API_BASE = "https://soccergpt-api.loca.lt/api";
+
 const SECRET_PASS = "admin123";
 
 // --- Authentication ---
@@ -39,7 +40,11 @@ async function loadCombinations() {
 
     try {
         const today = new Date().toISOString().split('T')[0];
-        const res = await fetch(`${API_BASE}/combinations?date=${today}`);
+        const res = await fetch(`${API_BASE}/combinations?date=${today}`, {
+            headers: {
+                "Bypass-Tunnel-Reminder": "true"
+            }
+        });
         const data = await res.json();
 
         if (!data.combinations || data.combinations.length === 0) {
@@ -145,7 +150,11 @@ async function loadUpcoming() {
 
     try {
         const today = new Date().toISOString().split('T')[0];
-        const res = await fetch(`${API_BASE}/Analysis?date=${today}`);
+        const res = await fetch(`${API_BASE}/Analysis?date=${today}`, {
+            headers: {
+                "Bypass-Tunnel-Reminder": "true"
+            }
+        });
         const data = await res.json();
 
         if (!data.matches || data.matches.length === 0) {
