@@ -30,7 +30,13 @@ function switchTab(tabId) {
     document.getElementById(`${tabId}-tab`).classList.remove('active', 'hidden');
 
     if (tabId === 'combinations') loadCombinations();
-    if (tabId === 'upcoming') loadUpcoming();
+    if (tabId === 'upcoming') {
+        if (!document.getElementById('upcoming-date').value) {
+            document.getElementById('upcoming-date').value = new Date().toISOString().split('T')[0];
+        }
+        loadUpcoming();
+    }
+    if (tabId === 'backtest') loadBacktest();
 }
 
 // --- Data Fetching & Rendering ---
@@ -146,11 +152,11 @@ function renderCombinations(combos, container) {
 // --- Upcoming Tab ---
 async function loadUpcoming() {
     const container = document.getElementById('upcoming-container');
+    const dateInput = document.getElementById('upcoming-date').value || new Date().toISOString().split('T')[0];
     container.innerHTML = '<div class="loading">Fetching upcoming analytics...</div>';
 
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const res = await fetch(`${API_BASE}/Analysis?date=${today}`, {
+        const res = await fetch(`${API_BASE}/Analysis?date=${dateInput}`, {
             headers: {
                 "Bypass-Tunnel-Reminder": "true"
             }
@@ -189,19 +195,29 @@ function renderUpcoming(matches, container) {
     let rowsHtml = '';
     matches.forEach(m => {
         const time = formatTime(m.match_date || m.date || new Date().toISOString());
-        // Find best prediction
-        let bestPred = "Avoid";
-        if (m.prediction && m.prediction.btts && m.prediction.btts.is_qualified) bestPred = "BTTS (Yes)";
-        else if (m.prediction && m.prediction.over25 && m.prediction.over25.is_qualified) bestPred = "Over 2.5";
-        else if (m.prediction && m.prediction.match_winner && m.prediction.match_winner.is_qualified) bestPred = `Winner (${m.prediction.match_winner.prediction})`;
+
+        let trapBadge = "";
+        if (m.trap && m.trap.is_trap) {
+            trapBadge = `<div style="color:var(--error); font-size:0.85em; margin-top:4px;">🚨 Trap: ${m.trap.reason}</div>`;
+        }
+
+        let details = [];
+        if (m.prediction && m.prediction.btts) details.push(`BTTS: ${m.prediction.btts.probability * 100}% (${m.prediction.btts.reason})`);
+        if (m.prediction && m.prediction.over25) details.push(`O2.5: ${m.prediction.over25.probability * 100}% (${m.prediction.over25.reason})`);
+        if (m.prediction && m.prediction.match_winner) details.push(`Winner: ${m.prediction.match_winner.prediction} ${m.prediction.match_winner.confidence * 100}% (${m.prediction.match_winner.reason})`);
 
         rowsHtml += `
             <tr>
-                <td class="col-time">${time}</td>
-                <td class="col-league">${m.league || m.league_name || "Unknown"}</td>
-                <td class="col-match">${m.home_team} vs ${m.away_team}</td>
-                <td class="col-selection">${bestPred}</td>
-                <td class="col-odds">${m.odds_home_win ? m.odds_home_win.toFixed(2) : '-'} | ${m.odds_draw ? m.odds_draw.toFixed(2) : '-'} | ${m.odds_away_win ? m.odds_away_win.toFixed(2) : '-'}</td>
+                <td class="col-time" style="vertical-align:top;">${time}</td>
+                <td class="col-league" style="vertical-align:top;">${m.league || m.league_name || "Unknown"}</td>
+                <td class="col-match" style="vertical-align:top;">
+                    <strong>${m.home_team} vs ${m.away_team}</strong>
+                    ${trapBadge}
+                </td>
+                <td class="col-selection" style="font-size:0.85em; vertical-align:top;">
+                    ${details.join('<br>')}
+                </td>
+                <td class="col-odds" style="vertical-align:top;">${m.odds_home_win ? m.odds_home_win.toFixed(2) : '-'} | ${m.odds_draw ? m.odds_draw.toFixed(2) : '-'} | ${m.odds_away_win ? m.odds_away_win.toFixed(2) : '-'}</td>
             </tr>
         `;
     });
@@ -213,7 +229,7 @@ function renderUpcoming(matches, container) {
                     <th class="col-time">Time</th>
                     <th class="col-league">League</th>
                     <th class="col-match">Match</th>
-                    <th class="col-selection">Top AI Signal</th>
+                    <th class="col-selection">Detailed Analysis</th>
                     <th class="col-odds">1X2 Odds</th>
                 </tr>
             </thead>
@@ -225,4 +241,83 @@ function renderUpcoming(matches, container) {
     tableWrapper.innerHTML = tableHtml;
     block.appendChild(tableWrapper);
     container.appendChild(block);
+}
+
+// --- Backtest Tab ---
+let cachedBacktestData = null;
+
+async function loadBacktest() {
+    const container = document.getElementById('backtest-container');
+    if (cachedBacktestData) {
+        renderBacktestData();
+        return;
+    }
+
+    container.innerHTML = '<div class="loading">Fetching historical backtest data...</div>';
+
+    try {
+        // Fetch static JSON from same directory
+        const res = await fetch('backtest_data.json');
+        cachedBacktestData = await res.json();
+        renderBacktestData();
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = `<div class="loading" style="color:var(--error)">Failed to load backtest data.</div>`;
+    }
+}
+
+function renderBacktestData() {
+    if (!cachedBacktestData) return;
+
+    const container = document.getElementById('backtest-container');
+    const stake = parseFloat(document.getElementById('stake-input').value) || 25;
+    const data = cachedBacktestData;
+
+    const totalStaked = data.summary.total_staked_units * stake;
+    const totalReturned = data.summary.total_returned_units * stake;
+    const profit = data.summary.pl_units * stake;
+
+    let html = `
+        <div class="combo-block">
+            <div class="combo-header">
+                <h3>📊 10-Week Combination Performance</h3>
+                <p>Based on ${data.summary.combos_total} combinations with a €${stake} stake per ticket.</p>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <tbody>
+                        <tr><td><strong>Total Staked</strong></td><td style="text-align:right;">€${totalStaked.toFixed(2)}</td></tr>
+                        <tr><td><strong>Total Returned</strong></td><td style="text-align:right;">€${totalReturned.toFixed(2)}</td></tr>
+                        <tr><td><strong>Total Profit</strong></td><td style="text-align:right; color:${profit > 0 ? 'var(--accent-blue)' : 'var(--error)'}">€${profit.toFixed(2)}</td></tr>
+                        <tr><td><strong>ROI</strong></td><td style="text-align:right; color:${data.summary.roi_percent > 0 ? 'var(--accent-blue)' : 'var(--error)'}">${data.summary.roi_percent}%</td></tr>
+                        <tr><td><strong>Combination Win Rate</strong></td><td style="text-align:right;">${data.summary.win_rate}%</td></tr>
+                        <tr><td><strong>Individual Leg Hit Rate</strong></td><td style="text-align:right;">${data.summary.leg_hit_rate}%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="combo-block">
+            <div class="combo-header">
+                <h3>🎯 Market Accuracy (Filtered Legs)</h3>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Market</th><th>Accuracy</th><th>Volume</th></tr>
+                    </thead>
+                    <tbody>
+                        ${data.markets.map(m => `
+                            <tr>
+                                <td>${m.market}</td>
+                                <td>${m.accuracy}%</td>
+                                <td>${m.total}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
 }

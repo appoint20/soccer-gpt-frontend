@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
     <!-- Security Overlay -->
@@ -23,12 +25,13 @@
 
     <!-- Main Content Application -->
     <div id="app-content" class="container hidden">
-        
+
         <header>
             <h1>Soccer GPT Analytics</h1>
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('combinations')">Combinations</button>
                 <button class="tab-btn" onclick="switchTab('upcoming')">Upcoming Matches</button>
+                <button class="tab-btn" onclick="switchTab('backtest')">Backtesting Report</button>
             </div>
         </header>
 
@@ -42,14 +45,30 @@
 
             <!-- Upcoming Matches Tab -->
             <section id="upcoming-tab" class="tab-content hidden">
+                <div class="date-picker-wrap">
+                    <label>Select Date: </label>
+                    <input type="date" id="upcoming-date" onchange="loadUpcoming()">
+                </div>
                 <div id="upcoming-container">
                     <!-- Upcoming detailed analysis table will be injected here -->
                 </div>
             </section>
+
+            <!-- Backtest Report Tab -->
+            <section id="backtest-tab" class="tab-content hidden">
+                <div class="stake-wrap">
+                    <label>Stake per combination (€): </label>
+                    <input type="number" id="stake-input" value="25" min="1" step="1" onchange="renderBacktestData()">
+                </div>
+                <div id="backtest-container">
+                    <!-- Backtest tables injected here -->
+                </div>
+            </section>
         </main>
-        
+
     </div>
 
     <script src="app.js"></script>
 </body>
+
 </html>

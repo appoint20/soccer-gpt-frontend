@@ -1,0 +1,167 @@
+{
+  "summary": {
+    "total_staked_units": 51.0,
+    "total_returned_units": 58.8,
+    "pl_units": 7.8,
+    "roi_percent": 15.3,
+    "combos_won": 15,
+    "combos_total": 51,
+    "win_rate": 29.41,
+    "leg_hit_rate": 63.87
+  },
+  "markets": [
+    {
+      "market": "Both Teams To Score",
+      "wins": 40,
+      "total": 58,
+      "accuracy": 68.97
+    },
+    {
+      "market": "Over 2.5 Goals",
+      "wins": 19,
+      "total": 38,
+      "accuracy": 50.0
+    },
+    {
+      "market": "Match Winner",
+      "wins": 17,
+      "total": 23,
+      "accuracy": 73.91
+    }
+  ],
+  "daily": [
+    {
+      "date": "2025-12-13",
+      "staked": 4.0,
+      "returned": 0.0,
+      "pl": -4.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2025-12-14",
+      "staked": 3.0,
+      "returned": 0.0,
+      "pl": -3.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2025-12-20",
+      "staked": 3.0,
+      "returned": 9.07,
+      "pl": 6.07,
+      "roi": 202.4
+    },
+    {
+      "date": "2025-12-21",
+      "staked": 2.0,
+      "returned": 3.24,
+      "pl": 1.24,
+      "roi": 62.0
+    },
+    {
+      "date": "2025-12-27",
+      "staked": 2.0,
+      "returned": 5.97,
+      "pl": 3.97,
+      "roi": 198.38
+    },
+    {
+      "date": "2025-12-28",
+      "staked": 1.0,
+      "returned": 0.0,
+      "pl": -1.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-01-03",
+      "staked": 2.0,
+      "returned": 0.0,
+      "pl": -2.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-01-04",
+      "staked": 3.0,
+      "returned": 0.0,
+      "pl": -3.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-01-10",
+      "staked": 2.0,
+      "returned": 0.0,
+      "pl": -2.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-01-11",
+      "staked": 1.0,
+      "returned": 0.0,
+      "pl": -1.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-01-17",
+      "staked": 3.0,
+      "returned": 5.83,
+      "pl": 2.83,
+      "roi": 94.4
+    },
+    {
+      "date": "2026-01-18",
+      "staked": 2.0,
+      "returned": 9.88,
+      "pl": 7.88,
+      "roi": 394.1
+    },
+    {
+      "date": "2026-01-24",
+      "staked": 3.0,
+      "returned": 6.48,
+      "pl": 3.48,
+      "roi": 116.0
+    },
+    {
+      "date": "2026-01-25",
+      "staked": 2.0,
+      "returned": 0.0,
+      "pl": -2.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-01-31",
+      "staked": 4.0,
+      "returned": 6.52,
+      "pl": 2.52,
+      "roi": 62.9
+    },
+    {
+      "date": "2026-02-01",
+      "staked": 4.0,
+      "returned": 0.0,
+      "pl": -4.0,
+      "roi": -100.0
+    },
+    {
+      "date": "2026-02-07",
+      "staked": 4.0,
+      "returned": 5.23,
+      "pl": 1.23,
+      "roi": 30.65
+    },
+    {
+      "date": "2026-02-08",
+      "staked": 2.0,
+      "returned": 4.48,
+      "pl": 2.48,
+      "roi": 123.99
+    },
+    {
+      "date": "2026-02-14",
+      "staked": 4.0,
+      "returned": 2.11,
+      "pl": -1.89,
+      "roi": -47.35
+    }
+  ]
+}
