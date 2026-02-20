@@ -1,0 +1,255 @@
+/* Base Reset and Variables */
+:root {
+    --bg-dark: #1f222d;
+    --bg-card: #272b38;
+    --text-primary: #f8f9fa;
+    --text-secondary: #9da2b4;
+    --border-color: #353b4d;
+    --accent-blue: #4b7bec;
+    --accent-hover: #3867d6;
+    --error: #fc5c65;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Security Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(15, 17, 26, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.login-box {
+    background-color: var(--bg-card);
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid var(--border-color);
+    max-width: 400px;
+    width: 90%;
+}
+
+.login-box h2 {
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.login-box p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.9em;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.login-box input:focus {
+    border-color: var(--accent-blue);
+}
+
+.login-box button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--accent-blue);
+    color: white;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-box button:hover {
+    background-color: var(--accent-hover);
+}
+
+.error-msg {
+    color: var(--error) !important;
+    margin-top: 15px;
+    margin-bottom: 0 !important;
+    height: 20px;
+}
+
+/* Main Content Application */
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+}
+
+header h1 {
+    font-weight: 700;
+    font-size: 1.5em;
+    letter-spacing: -0.5px;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 1em;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+}
+
+.tab-btn.active {
+    color: var(--text-primary);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+}
+
+/* Combination Blocks */
+.combo-block {
+    margin-bottom: 50px;
+}
+
+.combo-header {
+    margin-bottom: 15px;
+}
+
+.combo-header h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.combo-header p {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+/* Tables Styling matching the screenshot */
+.table-wrapper {
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    overflow: hidden;
+    /* Optional slight drop shadow for depth */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+thead {
+    background-color: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.85em;
+    padding: 16px 20px;
+    text-transform: capitalize;
+}
+
+td {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95em;
+    vertical-align: middle;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+.col-time { width: 10%; color: var(--text-secondary); }
+.col-league { width: 18%; color: var(--text-secondary); }
+.col-match { width: 32%; font-weight: 500; }
+.col-selection { width: 30%; color: var(--text-secondary); }
+.col-odds { width: 10%; font-weight: 600; text-align: right; }
+
+.table-footer-row td {
+    border-bottom: none;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.total-odds-val {
+    color: var(--text-primary);
+    font-size: 1.1em;
+}
+
+/* Loaders / States */
+.loading {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px;
+    font-style: italic;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 600;
+    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
+    margin-left: 8px;
+    vertical-align: middle;
+}

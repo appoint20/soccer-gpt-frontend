@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soccer GPT - Professional Combinations</title>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Security Overlay -->
+    <div id="password-overlay" class="overlay">
+        <div class="login-box">
+            <h2>⚽ Soccer GPT Vault</h2>
+            <p>Enter passphrase to access professional analytics.</p>
+            <input type="password" id="password-input" placeholder="Passphrase" onkeypress="handleKeyPress(event)">
+            <button onclick="checkPassword()">Unlock</button>
+            <p id="error-msg" class="error-msg"></p>
+        </div>
+    </div>
+
+    <!-- Main Content Application -->
+    <div id="app-content" class="container hidden">
+        
+        <header>
+            <h1>Soccer GPT Analytics</h1>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('combinations')">Combinations</button>
+                <button class="tab-btn" onclick="switchTab('upcoming')">Upcoming Matches</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Combinations Tab -->
+            <section id="combinations-tab" class="tab-content active">
+                <div id="combinations-container">
+                    <!-- Tables will be injected here by JS -->
+                </div>
+            </section>
+
+            <!-- Upcoming Matches Tab -->
+            <section id="upcoming-tab" class="tab-content hidden">
+                <div id="upcoming-container">
+                    <!-- Upcoming detailed analysis table will be injected here -->
+                </div>
+            </section>
+        </main>
+        
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
