@@ -338,6 +338,60 @@ tr:last-child td {
     gap: 15px;
 }
 
+.time-group-header {
+    background: var(--bg-card);
+    padding: 8px 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    margin: 15px 0 10px 0;
+    font-size: 0.9em;
+    border-left: 3px solid var(--accent-blue);
+}
+
+.match-info-compact {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+    font-size: 0.95em;
+}
+
+.match-time-col {
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 45px;
+}
+
+.match-league-col {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    min-width: 50px;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.match-teams-col {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge-success {
+    background: #20bf6b !important;
+    color: white !important;
+}
+
+.badge-neutral {
+    background: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
 .match-info-main {
     flex: 1;
 }

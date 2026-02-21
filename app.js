@@ -175,8 +175,49 @@ async function loadUpcoming() {
     }
 }
 
+function shortName(name) {
+    if (!name) return "";
+    return name.substring(0, 3).toUpperCase();
+}
+
+function getTimeGroup(timeStr) {
+    const hours = parseInt(timeStr.split(':')[0], 10);
+    const mins = parseInt(timeStr.split(':')[1], 10);
+    const totalMins = hours * 60 + mins;
+
+    if (totalMins < 13 * 60) return "Morning (Before 13:00)";
+    if (totalMins < 15 * 60 + 30) return "Early Afternoon (13:00 - 15:30)";
+    if (totalMins < 18 * 60) return "Late Afternoon (15:30 - 18:00)";
+    if (totalMins < 22 * 60) return "Evening (18:00 - 22:00)";
+    return "Night (22:00 onwards)";
+}
+
 function renderUpcoming(matches, container) {
     container.innerHTML = '';
+
+    // Sort matches chronologically
+    matches.sort((a, b) => {
+        const timeA = formatTime(a.match_date || a.date || new Date().toISOString());
+        const timeB = formatTime(b.match_date || b.date || new Date().toISOString());
+        return timeA.localeCompare(timeB);
+    });
+
+    // Group logically
+    const groupedMatches = {};
+    matches.forEach(m => {
+        const timeStr = formatTime(m.match_date || m.date || new Date().toISOString());
+        const group = getTimeGroup(timeStr);
+        if (!groupedMatches[group]) groupedMatches[group] = [];
+        groupedMatches[group].push(m);
+    });
+
+    const timeOrder = [
+        "Morning (Before 13:00)",
+        "Early Afternoon (13:00 - 15:30)",
+        "Late Afternoon (15:30 - 18:00)",
+        "Evening (18:00 - 22:00)",
+        "Night (22:00 onwards)"
+    ];
 
     const block = document.createElement('div');
     block.className = 'combo-block';
@@ -185,7 +226,7 @@ function renderUpcoming(matches, container) {
     header.className = 'combo-header';
     header.innerHTML = `
         <h3>📅 Daily Match Analytics</h3>
-        <p>Comprehensive algorithmic insights for all fixtures. Tap a match for details.</p>
+        <p>Comprehensive algorithmic insights grouped by time. Tap a match for details.</p>
     `;
     block.appendChild(header);
 
@@ -193,90 +234,117 @@ function renderUpcoming(matches, container) {
     listWrapper.className = 'match-list';
 
     let html = '';
-    matches.forEach(m => {
-        const time = formatTime(m.match_date || m.date || new Date().toISOString());
 
-        let bestPred = "Avoid";
-        if (m.prediction && m.prediction.btts && m.prediction.btts.is_qualified) bestPred = "BTTS (Yes)";
-        else if (m.prediction && m.prediction.over25 && m.prediction.over25.is_qualified) bestPred = "Over 2.5";
-        else if (m.prediction && m.prediction.match_winner && m.prediction.match_winner.is_qualified) bestPred = `Winner (${m.prediction.match_winner.prediction})`;
+    timeOrder.forEach(groupName => {
+        const groupMatches = groupedMatches[groupName];
+        if (!groupMatches || groupMatches.length === 0) return;
 
-        let trapBadge = "";
-        if (m.trap && m.trap.is_trap) {
-            trapBadge = `<div style="color:var(--error); font-size:0.85em; margin-top:8px;">🚨 Trap: ${m.trap.reason}</div>`;
-        }
+        html += `<div class="time-group-header">${groupName}</div>`;
 
-        // --- Donut Charts ---
-        let over25Prob = m.prediction?.over25?.probability ? Math.round(m.prediction.over25.probability * 100) : 0;
-        let bttsProb = m.prediction?.btts?.probability ? Math.round(m.prediction.btts.probability * 100) : 0;
+        groupMatches.forEach(m => {
+            const time = formatTime(m.match_date || m.date || new Date().toISOString());
 
-        let donutHtml = `
-            <div class="donuts-container">
-                <div class="donut-wrapper">
-                    <div class="donut-chart" style="--percent: ${over25Prob}%"><div class="donut-inner">${over25Prob}%</div></div>
-                    <span class="donut-label">O2.5 Prob</span>
-                </div>
-                <div class="donut-wrapper">
-                    <div class="donut-chart" style="--percent: ${bttsProb}%"><div class="donut-inner">${bttsProb}%</div></div>
-                    <span class="donut-label">BTTS Prob</span>
-                </div>
-            </div>
-        `;
+            let bestPred = "Avoid";
+            let bestClass = "";
+            let bestReason = "";
 
-        // --- H2H Bar Charts ---
-        const buildBar = (label, homeVal, awayVal, isPercentage = false) => {
-            const displayHome = isPercentage ? (homeVal * 100).toFixed(0) + '%' : homeVal.toFixed(1);
-            const displayAway = isPercentage ? (awayVal * 100).toFixed(0) + '%' : awayVal.toFixed(1);
-            const total = homeVal + awayVal || 0.001;
-            const homePct = (homeVal / total) * 100;
-            const awayPct = (awayVal / total) * 100;
-            return `
-                <div class="h2h-stat">
-                    <div class="h2h-label">
-                        <span>${displayHome}</span>
-                        <span>${label}</span>
-                        <span>${displayAway}</span>
+            if (m.prediction && m.prediction.btts && m.prediction.btts.is_qualified) {
+                bestPred = "BTTS";
+                bestReason = m.prediction.btts.reason;
+                bestClass = "badge-success";
+            } else if (m.prediction && m.prediction.over25 && m.prediction.over25.is_qualified) {
+                bestPred = "O2.5";
+                bestReason = m.prediction.over25.reason;
+                bestClass = "badge-success";
+            } else if (m.prediction && m.prediction.match_winner && m.prediction.match_winner.is_qualified) {
+                bestPred = `Win ${shortName(m.prediction.match_winner.prediction)}`;
+                bestReason = m.prediction.match_winner.reason;
+                bestClass = "badge-neutral";
+            }
+
+            let trapBadge = "";
+            if (m.trap && m.trap.is_trap) {
+                trapBadge = `<div style="color:var(--error); font-size:0.8em; margin-top:8px;">🚨 Trap: ${m.trap.reason}</div>`;
+            }
+
+            const homeShort = shortName(m.home_team);
+            const awayShort = shortName(m.away_team);
+            const leagueDisplay = m.league || m.league_name || "Unknown";
+
+            // Donut Charts
+            let over25Prob = m.prediction?.over25?.probability ? Math.round(m.prediction.over25.probability * 100) : 0;
+            let bttsProb = m.prediction?.btts?.probability ? Math.round(m.prediction.btts.probability * 100) : 0;
+
+            let donutHtml = `
+                <div class="donuts-container">
+                    <div class="donut-wrapper">
+                        <div class="donut-chart" style="--percent: ${over25Prob}%"><div class="donut-inner">${over25Prob}%</div></div>
+                        <span class="donut-label">O2.5 Prob</span>
                     </div>
-                    <div class="h2h-bar-bg">
-                        <div class="h2h-bar-home" style="width: ${homePct}%"></div>
-                        <div class="h2h-bar-away" style="width: ${awayPct}%"></div>
+                    <div class="donut-wrapper">
+                        <div class="donut-chart" style="--percent: ${bttsProb}%"><div class="donut-inner">${bttsProb}%</div></div>
+                        <span class="donut-label">BTTS Prob</span>
                     </div>
                 </div>
             `;
-        };
 
-        let h2hHtml = `<div class="h2h-container"><div class="h2h-title">Team Stats (Last 7 & Overall)</div>`;
-        if (m.home_stats && m.away_stats) {
-            h2hHtml += buildBar("Avg Goals Scored", m.home_stats.avg_goals_scored_last7 || 0, m.away_stats.avg_goals_scored_last7 || 0);
-            h2hHtml += buildBar("Avg Goals Conceded", m.home_stats.avg_goals_conceded_last7 || 0, m.away_stats.avg_goals_conceded_last7 || 0);
-            h2hHtml += buildBar("Clean Sheet Rate", m.home_stats.clean_sheet_rate || 0, m.away_stats.clean_sheet_rate || 0, true);
-        } else {
-            h2hHtml += `<div style="text-align:center;color:var(--text-secondary);font-size:0.8em;padding:10px;">Stats unavailable</div>`;
-        }
-        h2hHtml += `</div>`;
-
-        html += `
-            <div class="match-card">
-                <div class="match-header" onclick="this.parentElement.classList.toggle('expanded')">
-                    <div class="match-info-main">
-                        <div class="match-time-league">${time} • ${m.league || m.league_name || "Unknown"}</div>
-                        <div class="match-teams">${m.home_team} vs ${m.away_team}</div>
-                        <div class="match-signal-row">
-                            <span class="badge" style="margin-left:0; background:var(--accent-blue);">${bestPred}</span>
-                            <span style="font-size:0.8em; color:var(--text-secondary);">Odds: ${m.odds_home_win ? m.odds_home_win.toFixed(2) : '-'} | ${m.odds_draw ? m.odds_draw.toFixed(2) : '-'} | ${m.odds_away_win ? m.odds_away_win.toFixed(2) : '-'}</span>
+            // H2H Bar Charts
+            const buildBar = (label, homeVal, awayVal, isPercentage = false) => {
+                const displayHome = isPercentage ? (homeVal * 100).toFixed(0) + '%' : homeVal.toFixed(1);
+                const displayAway = isPercentage ? (awayVal * 100).toFixed(0) + '%' : awayVal.toFixed(1);
+                const total = homeVal + awayVal || 0.001;
+                const homePct = (homeVal / total) * 100;
+                const awayPct = (awayVal / total) * 100;
+                return `
+                    <div class="h2h-stat">
+                        <div class="h2h-label">
+                            <span>${displayHome}</span>
+                            <span>${label}</span>
+                            <span>${displayAway}</span>
                         </div>
-                        ${trapBadge}
+                        <div class="h2h-bar-bg">
+                            <div class="h2h-bar-home" style="width: ${homePct}%"></div>
+                            <div class="h2h-bar-away" style="width: ${awayPct}%"></div>
+                        </div>
                     </div>
-                    <div class="match-chevron">▼</div>
-                </div>
-                <div class="match-details">
-                    <div class="details-grid">
-                        ${donutHtml}
-                        ${h2hHtml}
+                `;
+            };
+
+            let h2hHtml = `<div class="h2h-container"><div class="h2h-title">Team Stats (Last 7 & Overall)</div>`;
+            if (m.home_stats && m.away_stats) {
+                h2hHtml += buildBar("Avg Goals", m.home_stats.avg_goals_scored_last7 || 0, m.away_stats.avg_goals_scored_last7 || 0);
+                h2hHtml += buildBar("Conceded", m.home_stats.avg_goals_conceded_last7 || 0, m.away_stats.avg_goals_conceded_last7 || 0);
+                h2hHtml += buildBar("Clean Sheet", m.home_stats.clean_sheet_rate || 0, m.away_stats.clean_sheet_rate || 0, true);
+            } else {
+                h2hHtml += `<div style="text-align:center;color:var(--text-secondary);font-size:0.8em;padding:10px;">Stats unavailable</div>`;
+            }
+            h2hHtml += `</div>`;
+
+            html += `
+                <div class="match-card">
+                    <div class="match-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <div class="match-info-compact">
+                            <span class="match-time-col">${time}</span>
+                            <span class="match-league-col">${leagueDisplay}</span>
+                            <span class="match-teams-col">${homeShort} vs ${awayShort}</span>
+                            <span class="badge ${bestClass}" style="margin-left:auto;">${bestPred}</span>
+                        </div>
+                    </div>
+                    <div class="match-details">
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                            <strong style="color:var(--text-primary)">Teams:</strong> ${m.home_team} vs ${m.away_team} <br>
+                            <strong style="color:var(--text-primary)">AI Signal Logic:</strong> ${bestReason || 'None'} <br>
+                            <strong style="color:var(--text-primary)">1X2 Odds:</strong> ${m.odds_home_win?.toFixed(2) || '-'} | ${m.odds_draw?.toFixed(2) || '-'} | ${m.odds_away_win?.toFixed(2) || '-'}
+                            ${trapBadge}
+                        </div>
+                        <div class="details-grid">
+                            ${donutHtml}
+                            ${h2hHtml}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        });
     });
 
     listWrapper.innerHTML = html;
