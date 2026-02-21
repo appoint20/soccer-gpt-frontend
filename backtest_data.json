@@ -149,5 +149,182 @@
       "pl": -1.89,
       "roi": -47.35
     }
+  ],
+  "leagues": [
+    {
+      "league": "Bundesliga",
+      "market": "Both Teams To Score",
+      "wins": 15,
+      "total": 16,
+      "accuracy": 93.75
+    },
+    {
+      "league": "La Liga 2",
+      "market": "Both Teams To Score",
+      "wins": 5,
+      "total": 10,
+      "accuracy": 50.0
+    },
+    {
+      "league": "2. Bundesliga",
+      "market": "Both Teams To Score",
+      "wins": 8,
+      "total": 9,
+      "accuracy": 88.89
+    },
+    {
+      "league": "Premier League",
+      "market": "Both Teams To Score",
+      "wins": 5,
+      "total": 8,
+      "accuracy": 62.5
+    },
+    {
+      "league": "Premier League",
+      "market": "Over 2.5 Goals",
+      "wins": 4,
+      "total": 8,
+      "accuracy": 50.0
+    },
+    {
+      "league": "Bundesliga",
+      "market": "Over 2.5 Goals",
+      "wins": 4,
+      "total": 6,
+      "accuracy": 66.67
+    },
+    {
+      "league": "La Liga",
+      "market": "Over 2.5 Goals",
+      "wins": 3,
+      "total": 6,
+      "accuracy": 50.0
+    },
+    {
+      "league": "Ligue 1",
+      "market": "Match Winner",
+      "wins": 3,
+      "total": 6,
+      "accuracy": 50.0
+    },
+    {
+      "league": "Championship",
+      "market": "Both Teams To Score",
+      "wins": 3,
+      "total": 4,
+      "accuracy": 75.0
+    },
+    {
+      "league": "Championship",
+      "market": "Over 2.5 Goals",
+      "wins": 2,
+      "total": 4,
+      "accuracy": 50.0
+    },
+    {
+      "league": "La Liga",
+      "market": "Match Winner",
+      "wins": 3,
+      "total": 3,
+      "accuracy": 100.0
+    },
+    {
+      "league": "Serie B",
+      "market": "Match Winner",
+      "wins": 2,
+      "total": 3,
+      "accuracy": 66.67
+    },
+    {
+      "league": "League Two",
+      "market": "Over 2.5 Goals",
+      "wins": 0,
+      "total": 3,
+      "accuracy": 0.0
+    },
+    {
+      "league": "La Liga",
+      "market": "Both Teams To Score",
+      "wins": 0,
+      "total": 3,
+      "accuracy": 0.0
+    },
+    {
+      "league": "Premier League",
+      "market": "Match Winner",
+      "wins": 2,
+      "total": 2,
+      "accuracy": 100.0
+    },
+    {
+      "league": "Serie A",
+      "market": "Over 2.5 Goals",
+      "wins": 2,
+      "total": 2,
+      "accuracy": 100.0
+    },
+    {
+      "league": "League One",
+      "market": "Match Winner",
+      "wins": 0,
+      "total": 2,
+      "accuracy": 0.0
+    },
+    {
+      "league": "Bundesliga",
+      "market": "Match Winner",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "League Two",
+      "market": "Match Winner",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "Championship",
+      "market": "Match Winner",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "La Liga 2",
+      "market": "Match Winner",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "La Liga 2",
+      "market": "Over 2.5 Goals",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "Serie A",
+      "market": "Match Winner",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "Ligue 2",
+      "market": "Both Teams To Score",
+      "wins": 1,
+      "total": 1,
+      "accuracy": 100.0
+    },
+    {
+      "league": "2. Bundesliga",
+      "market": "Over 2.5 Goals",
+      "wins": 0,
+      "total": 1,
+      "accuracy": 0.0
+    }
   ]
 }

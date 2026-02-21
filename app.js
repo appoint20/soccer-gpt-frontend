@@ -436,6 +436,30 @@ function renderBacktestData() {
                 </table>
             </div>
         </div>
+        
+        <div class="combo-block">
+            <div class="combo-header">
+                <h3>🏆 League & Market Performance</h3>
+                <p>Accuracy breakdown by specific league and betting market.</p>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>League</th><th>Market</th><th>Accuracy</th><th>Volume</th></tr>
+                    </thead>
+                    <tbody>
+                        ${data.leagues ? data.leagues.map(l => `
+                            <tr>
+                                <td>${l.league}</td>
+                                <td>${l.market}</td>
+                                <td style="color:${l.accuracy >= 65 ? 'var(--accent-blue)' : l.accuracy <= 40 ? 'var(--error)' : 'inherit'}">${l.accuracy}%</td>
+                                <td>${l.total}</td>
+                            </tr>
+                        `).join('') : '<tr><td colspan="4" style="text-align:center;">No data available</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     `;
     container.innerHTML = html;
 }
