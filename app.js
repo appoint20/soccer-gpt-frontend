@@ -143,8 +143,10 @@ function renderCombinations(combos, container) {
                         </div>
                         ${m.gemini_reasoning ? `
                         <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 10px; padding: 10px; background: rgba(52, 152, 219, 0.05); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
-                            <strong style="color:var(--accent-blue)">🤖 Gemini Analysis:</strong> ${m.gemini_recommendation} (${m.gemini_confidence}%) <br>
-                            <span style="font-style: italic;">"${m.gemini_reasoning}"</span>
+                            <strong style="color:var(--accent-blue)">🤖 Gemini Predicts:</strong> ${m.gemini_recommendation} (${m.gemini_confidence}%)
+                            ${m.gemini_is_trap ? '<span style="color:var(--accent-red);font-weight:bold;margin-left:10px;">🚨 TRAP DETECTED</span>' : ''}<br>
+                            <span style="font-style: italic;"><strong>Reasoning:</strong> "${m.gemini_reasoning}"</span><br>
+                            <span style="font-style: italic; margin-top:5px; display:inline-block;"><strong>Analysis:</strong> "${m.gemini_analysis_text}"</span>
                         </div>
                         ` : ''}
                     </div>
@@ -354,8 +356,10 @@ function renderUpcoming(matches, container) {
                         </div>
                         ${m.gemini ? `
                         <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: rgba(52, 152, 219, 0.05); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
-                            <strong style="color:var(--accent-blue)">🤖 Gemini Analysis:</strong> ${m.gemini.recommendation} (${m.gemini.confidence}%) <br>
-                            <span style="font-style: italic;">"${m.gemini.reasoning}"</span>
+                            <strong style="color:var(--accent-blue)">🤖 Gemini Predicts:</strong> ${m.gemini.recommendation} (${m.gemini.confidence}%)
+                            ${m.gemini.isTrap ? '<span style="color:var(--accent-red);font-weight:bold;margin-left:10px;">🚨 TRAP DETECTED</span>' : ''}<br>
+                            <span style="font-style: italic;"><strong>Reasoning:</strong> "${m.gemini.reasoning}"</span><br>
+                            <span style="font-style: italic; margin-top:5px; display:inline-block;"><strong>Analysis:</strong> "${m.gemini.analysis}"</span>
                         </div>
                         ` : ''}
                         <div class="details-grid">
