@@ -1,49 +1,35 @@
 {
   "summary": {
-    "total_staked_units": 51.0,
+    "total_staked_units": 44.0,
     "total_returned_units": 58.8,
-    "pl_units": 7.8,
-    "roi_percent": 15.3,
+    "pl_units": 14.8,
+    "roi_percent": 33.64,
     "combos_won": 15,
-    "combos_total": 51,
-    "win_rate": 29.41,
-    "leg_hit_rate": 63.87
+    "combos_total": 44,
+    "win_rate": 34.09,
+    "leg_hit_rate": 66.02
   },
   "markets": [
     {
       "market": "Both Teams To Score",
-      "wins": 40,
-      "total": 58,
-      "accuracy": 68.97
+      "wins": 37,
+      "total": 51,
+      "accuracy": 72.55
     },
     {
       "market": "Over 2.5 Goals",
-      "wins": 19,
-      "total": 38,
-      "accuracy": 50.0
+      "wins": 16,
+      "total": 31,
+      "accuracy": 51.61
     },
     {
       "market": "Match Winner",
-      "wins": 17,
-      "total": 23,
-      "accuracy": 73.91
+      "wins": 15,
+      "total": 21,
+      "accuracy": 71.43
     }
   ],
   "daily": [
-    {
-      "date": "2025-12-13",
-      "staked": 4.0,
-      "returned": 0.0,
-      "pl": -4.0,
-      "roi": -100.0
-    },
-    {
-      "date": "2025-12-14",
-      "staked": 3.0,
-      "returned": 0.0,
-      "pl": -3.0,
-      "roi": -100.0
-    },
     {
       "date": "2025-12-20",
       "staked": 3.0,
