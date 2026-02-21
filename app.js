@@ -78,6 +78,13 @@ function formatTime(dateStr) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+function shortMarket(market, prediction) {
+    if (market === "Match Winner") return `Win ${shortName(prediction)}`;
+    if (market === "Both Teams To Score") return "BTTS";
+    if (market === "Over 2.5 Goals") return "O2.5";
+    return market;
+}
+
 function renderCombinations(combos, container) {
     container.innerHTML = '';
 
@@ -97,54 +104,56 @@ function renderCombinations(combos, container) {
         `;
         block.appendChild(header);
 
-        // Table Wrapper
-        const tableWrapper = document.createElement('div');
-        tableWrapper.className = 'table-wrapper';
+        const listWrapper = document.createElement('div');
+        listWrapper.className = 'match-list';
 
-        let rowsHtml = '';
+        let html = '';
         let totalOdds = 1.0;
 
         combo.matches.forEach(m => {
             const time = formatTime(m.match_date);
-            const selection = m.market === "Match Winner" ? `Match Winner (${m.prediction})` : `${m.market} (${m.prediction})`;
+            const selectionShort = shortMarket(m.market, m.prediction);
             const isDual = m.trap_reason && m.trap_reason.includes("Dual-Qualified");
-            const badge = isDual ? '<span class="badge">DUAL</span>' : '';
 
-            rowsHtml += `
-                <tr>
-                    <td class="col-time">${time}</td>
-                    <td class="col-league">${m.league_name}</td>
-                    <td class="col-match">${m.home_team} vs ${m.away_team}</td>
-                    <td class="col-selection">${selection} ${badge}</td>
-                    <td class="col-odds">${m.odds.toFixed(2)}</td>
-                </tr>
-            `;
+            const homeShort = shortName(m.home_team);
+            const awayShort = shortName(m.away_team);
+            const leagueDisplay = m.league_name || "Unknown";
+
             totalOdds *= m.odds;
+
+            let dualBadge = isDual ? `<div style="color:#f39c12; font-size:0.8em; margin-top:8px;">💎 Dual Qualified</div>` : "";
+
+            html += `
+                <div class="match-card">
+                    <div class="match-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <div class="match-info-compact">
+                            <span class="match-time-col">${time}</span>
+                            <span class="match-league-col">${leagueDisplay}</span>
+                            <span class="match-teams-col">${homeShort} vs ${awayShort}</span>
+                            <span class="badge ${isDual ? 'badge-success' : 'badge-neutral'}" style="margin-left:auto;">${selectionShort}</span>
+                            <span class="match-chevron" style="margin-left: 8px;">▼</span>
+                        </div>
+                    </div>
+                    <div class="match-details">
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 10px;">
+                            <strong style="color:var(--text-primary)">Teams:</strong> ${m.home_team} vs ${m.away_team} <br>
+                            <strong style="color:var(--text-primary)">Selection:</strong> ${m.market} (${m.prediction}) <br>
+                            <strong style="color:var(--text-primary)">Odds:</strong> ${m.odds.toFixed(2)}
+                            ${dualBadge}
+                        </div>
+                    </div>
+                </div>
+            `;
         });
 
-        const tableHtml = `
-            <table>
-                <thead>
-                    <tr>
-                        <th class="col-time">Time</th>
-                        <th class="col-league">League</th>
-                        <th class="col-match">Match</th>
-                        <th class="col-selection">Selection</th>
-                        <th class="col-odds">Odds</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHtml}
-                    <tr class="table-footer-row">
-                        <td colspan="4" style="text-align: right; border-bottom: none;">Total Odds</td>
-                        <td class="col-odds total-odds-val">${totalOdds.toFixed(2)}</td>
-                    </tr>
-                </tbody>
-            </table>
+        html += `
+            <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 8px; text-align: right; font-size: 1.1em; font-weight: 600;">
+                Combo Odds: <span style="color:var(--accent-blue)">${totalOdds.toFixed(2)}</span>
+            </div>
         `;
 
-        tableWrapper.innerHTML = tableHtml;
-        block.appendChild(tableWrapper);
+        listWrapper.innerHTML = html;
+        block.appendChild(listWrapper);
         container.appendChild(block);
     });
 }
