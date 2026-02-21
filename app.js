@@ -141,6 +141,12 @@ function renderCombinations(combos, container) {
                             <strong style="color:var(--text-primary)">Odds:</strong> ${m.odds.toFixed(2)}
                             ${dualBadge}
                         </div>
+                        ${m.gemini_reasoning ? `
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 10px; padding: 10px; background: rgba(52, 152, 219, 0.05); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
+                            <strong style="color:var(--accent-blue)">🤖 Gemini Analysis:</strong> ${m.gemini_recommendation} (${m.gemini_confidence}%) <br>
+                            <span style="font-style: italic;">"${m.gemini_reasoning}"</span>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -346,6 +352,12 @@ function renderUpcoming(matches, container) {
                             <strong style="color:var(--text-primary)">1X2 Odds:</strong> ${m.odds_home_win?.toFixed(2) || '-'} | ${m.odds_draw?.toFixed(2) || '-'} | ${m.odds_away_win?.toFixed(2) || '-'}
                             ${trapBadge}
                         </div>
+                        ${m.gemini ? `
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: rgba(52, 152, 219, 0.05); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
+                            <strong style="color:var(--accent-blue)">🤖 Gemini Analysis:</strong> ${m.gemini.recommendation} (${m.gemini.confidence}%) <br>
+                            <span style="font-style: italic;">"${m.gemini.reasoning}"</span>
+                        </div>
+                        ` : ''}
                         <div class="details-grid">
                             ${donutHtml}
                             ${h2hHtml}
