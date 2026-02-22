@@ -1,4 +1,4 @@
-const API_BASE = "https://soccergpt-api.loca.lt/api";
+const API_BASE = "http://localhost:5165/api";
 
 const SECRET_PASS = "admin123";
 
@@ -265,28 +265,41 @@ function renderUpcoming(matches, container) {
             let bestClass = "";
             let bestReason = "";
 
-            if (m.prediction && m.prediction.btts && m.prediction.btts.is_qualified) {
+            if (m.prediction?.btts?.is_qualified) {
                 bestPred = "BTTS";
                 bestReason = m.prediction.btts.reason;
                 bestClass = "badge-success";
-            } else if (m.prediction && m.prediction.over25 && m.prediction.over25.is_qualified) {
+            } else if (m.prediction?.over25?.is_qualified) {
                 bestPred = "O2.5";
                 bestReason = m.prediction.over25.reason;
                 bestClass = "badge-success";
-            } else if (m.prediction && m.prediction.match_winner && m.prediction.match_winner.is_qualified) {
+            } else if (m.prediction?.match_winner?.is_qualified) {
                 bestPred = `Win ${shortName(m.prediction.match_winner.prediction)}`;
                 bestReason = m.prediction.match_winner.reason;
                 bestClass = "badge-neutral";
             }
 
             let trapBadge = "";
-            if (m.trap && m.trap.is_trap) {
+            if (m.trap?.is_trap) {
                 trapBadge = `<div style="color:var(--error); font-size:0.8em; margin-top:8px;">🚨 Trap: ${m.trap.reason}</div>`;
             }
 
             const homeShort = shortName(m.home_team);
             const awayShort = shortName(m.away_team);
             const leagueDisplay = m.league || m.league_name || "Unknown";
+
+            // Safety render for team info
+            const homeRank = m.home_info?.rank || '-';
+            const homePts = m.home_info?.points || '-';
+            const homeForm = m.home_info?.form || '-';
+            const homeFormPct = m.home_info?.form_percentage || 0;
+            const homeInfoStr = m.home_info ? `(#${homeRank} | ${homePts}pts | ${homeForm} | Form: ${homeFormPct}%)` : '';
+
+            const awayRank = m.away_info?.rank || '-';
+            const awayPts = m.away_info?.points || '-';
+            const awayForm = m.away_info?.form || '-';
+            const awayFormPct = m.away_info?.form_percentage || 0;
+            const awayInfoStr = m.away_info ? `(#${awayRank} | ${awayPts}pts | ${awayForm} | Form: ${awayFormPct}%)` : '';
 
             // Donut Charts
             let over25Prob = m.prediction?.over25?.probability ? Math.round(m.prediction.over25.probability * 100) : 0;
@@ -337,6 +350,15 @@ function renderUpcoming(matches, container) {
             }
             h2hHtml += `</div>`;
 
+            const geminiHtml = m.gemini ? `
+                <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: rgba(52, 152, 219, 0.05); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
+                    <strong style="color:var(--accent-blue)">🤖 Gemini Predicts:</strong> ${m.gemini.recommendation || m.gemini.Recommendation || 'N/A'} (${m.gemini.confidence || m.gemini.Confidence || 0}%)
+                    ${(m.gemini.is_trap || m.gemini.isTrap || m.gemini.IsTrap) ? '<span style="color:var(--accent-red);font-weight:bold;margin-left:10px;">🚨 TRAP DETECTED</span>' : ''}<br>
+                    <span style="font-style: italic;"><strong>Reasoning:</strong> "${m.gemini.reasoning || m.gemini.Reasoning || ''}"</span><br>
+                    <span style="font-style: italic; margin-top:5px; display:inline-block;"><strong>Analysis:</strong> "${m.gemini.analysis || m.gemini.Analysis || ''}"</span>
+                </div>
+            ` : '';
+
             html += `
                 <div class="match-card">
                     <div class="match-header" onclick="this.parentElement.classList.toggle('expanded')">
@@ -349,19 +371,14 @@ function renderUpcoming(matches, container) {
                     </div>
                     <div class="match-details">
                         <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                            <strong style="color:var(--text-primary)">Teams:</strong> ${m.home_team} vs ${m.away_team} <br>
+                            <strong style="color:var(--text-primary)">Teams:</strong> ${m.home_team} ${homeInfoStr} <br/> 
+                            <span style="margin-left: 50px;">vs</span> <br/>
+                            <span style="margin-left: 50px;">${m.away_team} ${awayInfoStr}</span> <br><br>
                             <strong style="color:var(--text-primary)">AI Signal Logic:</strong> ${bestReason || 'None'} <br>
                             <strong style="color:var(--text-primary)">1X2 Odds:</strong> ${m.odds_home_win?.toFixed(2) || '-'} | ${m.odds_draw?.toFixed(2) || '-'} | ${m.odds_away_win?.toFixed(2) || '-'}
                             ${trapBadge}
                         </div>
-                        ${m.gemini ? `
-                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: rgba(52, 152, 219, 0.05); border-radius: 6px; border-left: 3px solid var(--accent-blue);">
-                            <strong style="color:var(--accent-blue)">🤖 Gemini Predicts:</strong> ${m.gemini.recommendation} (${m.gemini.confidence}%)
-                            ${m.gemini.isTrap ? '<span style="color:var(--accent-red);font-weight:bold;margin-left:10px;">🚨 TRAP DETECTED</span>' : ''}<br>
-                            <span style="font-style: italic;"><strong>Reasoning:</strong> "${m.gemini.reasoning}"</span><br>
-                            <span style="font-style: italic; margin-top:5px; display:inline-block;"><strong>Analysis:</strong> "${m.gemini.analysis}"</span>
-                        </div>
-                        ` : ''}
+                        ${geminiHtml}
                         <div class="details-grid">
                             ${donutHtml}
                             ${h2hHtml}
