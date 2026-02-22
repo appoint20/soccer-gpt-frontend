@@ -277,6 +277,13 @@ function renderUpcoming(matches, container) {
                 bestPred = `Win ${shortName(m.prediction.match_winner.prediction)}`;
                 bestReason = m.prediction.match_winner.reason;
                 bestClass = "badge-neutral";
+            } else {
+                // If we get here, the prediction is "Avoid"
+                const mwReason = m.prediction?.match_winner?.reason;
+                const bttsReason = m.prediction?.btts?.reason;
+                const trapReason = m.trap?.is_trap ? "Match flagged as a trap" : null;
+
+                bestReason = trapReason || mwReason || bttsReason || "Did not meet EV/Confidence thresholds";
             }
 
             let trapBadge = "";
