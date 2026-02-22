@@ -515,6 +515,157 @@ function renderBacktestData() {
                 </table>
             </div>
         </div>
+        </div>
     `;
     container.innerHTML = html;
+}
+
+// --- USER COMBINATION BET SLIP LOGIC ---
+let betSlip = [];
+let betSlipExpanded = false;
+
+// We ensure on reload that the slip is hidden properly
+window.addEventListener('load', () => {
+    document.getElementById('bet-slip-overlay').classList.add('collapsed');
+});
+
+function toggleBetSlip() {
+    const slip = document.getElementById('bet-slip-overlay');
+    const chevron = document.getElementById('bet-slip-chevron');
+    betSlipExpanded = !betSlipExpanded;
+    if (betSlipExpanded) {
+        slip.classList.remove('collapsed');
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        slip.classList.add('collapsed');
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
+function updateBetSlipUI() {
+    const countBadge = document.getElementById('bet-slip-count');
+    const container = document.getElementById('bet-slip-items');
+    const oddsEl = document.getElementById('slip-total-odds');
+    const probEl = document.getElementById('slip-total-prob');
+    const btn = document.getElementById('save-slip-btn');
+    const slip = document.getElementById('bet-slip-overlay');
+
+    countBadge.innerText = betSlip.length;
+
+    if (betSlip.length > 0) {
+        slip.classList.remove('hidden');
+        if (!betSlipExpanded) toggleBetSlip(); // Auto expand on first add
+    } else {
+        slip.classList.add('hidden');
+        betSlipExpanded = false;
+        document.getElementById('bet-slip-chevron').style.transform = 'rotate(0deg)';
+        slip.classList.add('collapsed');
+    }
+
+    container.innerHTML = '';
+    let totalOdds = 1.0;
+    let totalProb = 1.0;
+
+    betSlip.forEach((item, index) => {
+        totalOdds *= item.odds;
+        totalProb *= item.probability;
+
+        container.innerHTML += `
+            <div class="slip-item">
+                <span class="slip-item-remove" onclick="removeFromSlip(${index})">✕</span>
+                <div class="slip-item-teams">${item.home} vs ${item.away}</div>
+                <div class="slip-item-market">${item.market} - ${item.prediction}</div>
+                <div class="slip-item-odds">${item.odds.toFixed(2)}</div>
+            </div>
+        `;
+    });
+
+    oddsEl.innerText = betSlip.length > 0 ? totalOdds.toFixed(2) : '1.00';
+    probEl.innerText = betSlip.length > 0 ? (totalProb * 100).toFixed(1) + '%' : '100%';
+
+    btn.disabled = betSlip.length === 0;
+}
+
+function toggleSlipItem(fixtureId, home, away, market, prediction, odds, probability, btnElement) {
+    const existingIndex = betSlip.findIndex(i => i.fixtureId === fixtureId);
+    if (existingIndex >= 0) {
+        betSlip.splice(existingIndex, 1);
+        btnElement.classList.remove('added');
+        btnElement.innerText = '+ Add';
+    } else {
+        betSlip.push({ fixtureId, home, away, market, prediction, odds, probability });
+        btnElement.classList.add('added');
+        btnElement.innerText = '✓ Added';
+    }
+    updateBetSlipUI();
+}
+
+function removeFromSlip(index) {
+    const item = betSlip[index];
+    betSlip.splice(index, 1);
+
+    // reset button in DOM
+    const buttons = document.querySelectorAll('.add-to-slip-btn');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('data-id') == item.fixtureId) {
+            btn.classList.remove('added');
+            btn.innerText = '+ Add';
+        }
+    });
+
+    updateBetSlipUI();
+}
+
+async function saveCombination() {
+    const btn = document.getElementById('save-slip-btn');
+    btn.innerText = 'Saving...';
+    btn.disabled = true;
+
+    if (!API_PASS) {
+        alert('Authentication memory expired. Refresh and login again.');
+        return;
+    }
+
+    const payload = {
+        name: `Custom Combo ${new Date().toLocaleDateString()}`,
+        matches: betSlip.map(i => ({
+            fixtureId: i.fixtureId,
+            market: i.market,
+            prediction: i.prediction,
+            odds: i.odds,
+            confidence: i.probability * 100
+        }))
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/combinations/custom`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': API_PASS
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert('Combination saved successfully to backend database!');
+            betSlip = [];
+            document.querySelectorAll('.add-to-slip-btn').forEach(b => {
+                b.classList.remove('added');
+                b.innerText = '+ Add';
+            });
+            updateBetSlipUI();
+
+            // Auto-collapse
+            betSlipExpanded = true;
+            toggleBetSlip();
+        } else {
+            alert('Failed to save combination. The database may be rejecting it contextually.');
+        }
+    } catch (e) {
+        alert('Error connecting to API to save combination.');
+    }
+
+    btn.innerText = 'Save Combination';
+    btn.disabled = betSlip.length === 0;
 }
