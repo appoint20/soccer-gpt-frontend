@@ -289,17 +289,17 @@ function renderUpcoming(matches, container) {
             const leagueDisplay = m.league || m.league_name || "Unknown";
 
             // Safety render for team info
-            const homeRank = m.home_info?.rank || '-';
-            const homePts = m.home_info?.points || '-';
-            const homeForm = m.home_info?.form || '-';
-            const homeFormPct = m.home_info?.form_percentage || 0;
-            const homeInfoStr = m.home_info ? `(#${homeRank} | ${homePts}pts | ${homeForm} | Form: ${homeFormPct}%)` : '';
+            const homeRank = m.home_stats?.rank || '-';
+            const homePts = m.home_stats?.points || '-';
+            const homeForm = m.home_stats?.form || '-';
+            const homeFormPct = m.home_stats?.form_percentage || 0;
+            const homeInfoStr = m.home_stats ? `(#${homeRank} | ${homePts}pts | ${homeForm} | Form: ${homeFormPct}%)` : '';
 
-            const awayRank = m.away_info?.rank || '-';
-            const awayPts = m.away_info?.points || '-';
-            const awayForm = m.away_info?.form || '-';
-            const awayFormPct = m.away_info?.form_percentage || 0;
-            const awayInfoStr = m.away_info ? `(#${awayRank} | ${awayPts}pts | ${awayForm} | Form: ${awayFormPct}%)` : '';
+            const awayRank = m.away_stats?.rank || '-';
+            const awayPts = m.away_stats?.points || '-';
+            const awayForm = m.away_stats?.form || '-';
+            const awayFormPct = m.away_stats?.form_percentage || 0;
+            const awayInfoStr = m.away_stats ? `(#${awayRank} | ${awayPts}pts | ${awayForm} | Form: ${awayFormPct}%)` : '';
 
             // Donut Charts
             let over25Prob = m.prediction?.over25?.probability ? Math.round(m.prediction.over25.probability * 100) : 0;
