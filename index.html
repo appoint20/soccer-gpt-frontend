@@ -69,6 +69,32 @@
 
     </div>
 
+    <!-- Live Bet Slip / Combination Builder -->
+    <div id="bet-slip-overlay" class="bet-slip hidden">
+        <div class="bet-slip-header" onclick="toggleBetSlip()">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>🧾 Custom Combination <span id="bet-slip-count" class="badge">0</span></h3>
+                <span id="bet-slip-chevron" class="chevron">▲</span>
+            </div>
+        </div>
+        <div id="bet-slip-content" class="bet-slip-content">
+            <div id="bet-slip-items" class="bet-slip-items">
+                <!-- Selections injected here -->
+            </div>
+            <div class="bet-slip-footer">
+                <div class="slip-summary-row">
+                    <span>Total Odds:</span>
+                    <strong id="slip-total-odds">1.00</strong>
+                </div>
+                <div class="slip-summary-row">
+                    <span>Live Accuracy (Probability):</span>
+                    <strong id="slip-total-prob">100%</strong>
+                </div>
+                <button id="save-slip-btn" class="save-slip-btn" onclick="saveCombination()" disabled>Save Combination</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 

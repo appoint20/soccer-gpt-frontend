@@ -557,3 +557,164 @@ tr:last-child td {
     /* red accent */
     border-radius: 0 3px 3px 0;
 }
+
+/* Bet Slip / Live Combination Builder */
+.bet-slip {
+    position: fixed;
+    bottom: 0;
+    right: 20px;
+    width: 350px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+}
+
+.bet-slip.collapsed {
+    transform: translateY(calc(100% - 50px));
+}
+
+.bet-slip-header {
+    padding: 15px 20px;
+    background: var(--accent-blue);
+    color: white;
+    border-radius: 11px 11px 0 0;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.bet-slip-header h3 {
+    font-size: 1.05em;
+    margin: 0;
+}
+
+.bet-slip-header .badge {
+    background: rgba(0,0,0,0.2) !important;
+    color: white !important;
+    font-size: 0.8em;
+}
+
+.bet-slip-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 400px;
+}
+
+.bet-slip-items {
+    padding: 15px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.slip-item {
+    background: var(--bg-dark);
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.slip-item-remove {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.slip-item-remove:hover {
+    color: var(--error);
+}
+
+.slip-item-teams {
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 5px;
+    padding-right: 15px;
+}
+
+.slip-item-market {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+}
+
+.slip-item-odds {
+    text-align: right;
+    font-weight: bold;
+    color: var(--accent-blue);
+    font-size: 0.9em;
+    margin-top: -15px;
+}
+
+.bet-slip-footer {
+    padding: 15px;
+    background: rgba(0,0,0,0.2);
+    border-top: 1px solid var(--border-color);
+}
+
+.slip-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.slip-summary-row strong {
+    color: white;
+}
+
+.save-slip-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    background: #20bf6b;
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.save-slip-btn:hover {
+    background: #1da85f;
+}
+
+.save-slip-btn:disabled {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.add-to-slip-btn {
+    background: var(--bg-dark);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: all 0.2s;
+}
+
+.add-to-slip-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.add-to-slip-btn.added {
+    background: #20bf6b;
+    border-color: #20bf6b;
+    color: white;
+}

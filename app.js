@@ -75,7 +75,7 @@ function getHeaderDetails(name) {
 
 function formatTime(dateStr) {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function shortMarket(market, prediction) {
@@ -264,19 +264,29 @@ function renderUpcoming(matches, container) {
             let bestPred = "Avoid";
             let bestClass = "";
             let bestReason = "";
+            let slipMarket = "";
+            let slipPredStr = "";
+            let slipOdds = 0;
+            let slipProb = 0;
 
             if (m.prediction?.btts?.is_qualified) {
                 bestPred = "BTTS";
                 bestReason = m.prediction.btts.reason;
                 bestClass = "badge-success";
+                slipMarket = "Both Teams To Score"; slipPredStr = "Yes"; slipOdds = m.odds_btts_yes > 1.1 ? m.odds_btts_yes : 1.80; slipProb = m.prediction.btts.probability;
             } else if (m.prediction?.over25?.is_qualified) {
                 bestPred = "O2.5";
                 bestReason = m.prediction.over25.reason;
                 bestClass = "badge-success";
+                slipMarket = "Over 2.5 Goals"; slipPredStr = "Over"; slipOdds = m.odds_over25 > 1.1 ? m.odds_over25 : 1.80; slipProb = m.prediction.over25.probability;
             } else if (m.prediction?.match_winner?.is_qualified) {
                 bestPred = `Win ${shortName(m.prediction.match_winner.prediction)}`;
                 bestReason = m.prediction.match_winner.reason;
                 bestClass = "badge-neutral";
+                slipMarket = "Match Winner"; slipPredStr = m.prediction.match_winner.prediction;
+                const oddsMap = { 'home': m.odds_home_win, 'draw': m.odds_draw, 'away': m.odds_away_win };
+                slipOdds = oddsMap[slipPredStr.toLowerCase()] > 1.1 ? oddsMap[slipPredStr.toLowerCase()] : 2.05;
+                slipProb = m.prediction.match_winner.confidence;
             } else {
                 // If we get here, the prediction is "Avoid"
                 const mwReason = m.prediction?.match_winner?.reason;
@@ -366,6 +376,10 @@ function renderUpcoming(matches, container) {
                 </div>
             ` : '';
 
+            const safeHome = m.home_team.replace(/'/g, "\\'");
+            const safeAway = m.away_team.replace(/'/g, "\\'");
+            const addBtnHtml = bestPred !== "Avoid" ? `<button class="add-to-slip-btn" data-id="${m.id}" onclick="event.stopPropagation(); toggleSlipItem(${m.id}, '${safeHome}', '${safeAway}', '${slipMarket}', '${slipPredStr}', ${slipOdds}, ${slipProb}, this)">+ Add</button>` : '';
+
             html += `
                 <div class="match-card">
                     <div class="match-header" onclick="this.parentElement.classList.toggle('expanded')">
@@ -374,6 +388,7 @@ function renderUpcoming(matches, container) {
                             <span class="match-league-col">${leagueDisplay}</span>
                             <span class="match-teams-col">${homeShort} vs ${awayShort}</span>
                             <span class="badge ${bestClass}" style="margin-left:auto;">${bestPred}</span>
+                            ${addBtnHtml}
                         </div>
                     </div>
                     <div class="match-details">
