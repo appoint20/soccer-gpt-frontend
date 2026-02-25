@@ -20,7 +20,7 @@ export default function MatchDetailScreen() {
   const router = useRouter();
   const { matchData } = useLocalSearchParams();
   const { width } = useWindowDimensions();
-  const cardWidth = (width - 48) / 2;
+  const cardWidth = (width - 56) / 2; // More gap between cards
 
   const match: Match = useMemo(() => {
     try {
@@ -80,26 +80,27 @@ export default function MatchDetailScreen() {
 
     return (
       <View style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth }]}>
-        <View style={styles.teamHeader}>
-          <Text style={[styles.teamRank, { color: colors.accent }]}>#{stats.rank}</Text>
-          <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-            {stats.name}
-          </Text>
-        </View>
-
-        {/* Donut Chart for Form */}
-        <View style={styles.chartSection}>
+        {/* Team Name + Donut Chart on same line */}
+        <View style={styles.teamHeaderRow}>
+          <View style={styles.teamNameSection}>
+            <Text style={[styles.teamRank, { color: colors.accent }]}>#{stats.rank}</Text>
+            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2}>
+              {stats.name}
+            </Text>
+          </View>
           <DonutChart 
             percentage={formPercent} 
-            size={60} 
-            strokeWidth={6}
+            size={50} 
+            strokeWidth={5}
             color={isHome ? colors.error : colors.accent}
           />
-          <View style={styles.formContainer}>
-            <Text style={[styles.formLabel, { color: colors.textMuted }]}>Form</Text>
-            <View style={styles.formRow}>
-              {stats.form.split('').slice(0, 5).map((r, i) => renderFormBadge(r, i))}
-            </View>
+        </View>
+
+        {/* Form Badges right under */}
+        <View style={styles.formSection}>
+          <Text style={[styles.formLabel, { color: colors.textMuted }]}>Form</Text>
+          <View style={styles.formRow}>
+            {stats.form.split('').slice(0, 5).map((r, i) => renderFormBadge(r, i))}
           </View>
         </View>
 
@@ -133,7 +134,7 @@ export default function MatchDetailScreen() {
         {/* Progress Bars */}
         <View style={styles.progressSection}>
           <View style={styles.progressRow}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Recent Scored (Last 3)</Text>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Recent Scored (L3)</Text>
             <Text style={[styles.progressValue, { color: colors.success }]}>{recentScoredPercent}%</Text>
           </View>
           {renderStatBar(recentScoredPercent, 100, colors.success)}
@@ -141,7 +142,7 @@ export default function MatchDetailScreen() {
 
         <View style={styles.progressSection}>
           <View style={styles.progressRow}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Recent Conceded (Last 3)</Text>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Recent Conceded (L3)</Text>
             <Text style={[styles.progressValue, { color: colors.warning }]}>{recentConcededPercent}%</Text>
           </View>
           {renderStatBar(recentConcededPercent, 100, colors.warning)}
@@ -161,15 +162,6 @@ export default function MatchDetailScreen() {
   // Calculate AI confidence from model predictions if gemini is not available
   const getAIConfidence = () => {
     if (match.gemini) return match.gemini.confidence;
-    // Calculate from model predictions
-    const avgConfidence = (
-      match.models.poisson.home_win + 
-      match.models.poisson.draw + 
-      match.models.poisson.away_win +
-      match.models.monte_carlo.home_win +
-      match.models.monte_carlo.draw +
-      match.models.monte_carlo.away_win
-    ) / 6;
     return Math.round(Math.max(
       match.models.poisson.home_win,
       match.models.poisson.away_win,
@@ -180,7 +172,6 @@ export default function MatchDetailScreen() {
 
   const getRecommendation = () => {
     if (match.gemini) return match.gemini.recommendation;
-    // Generate recommendation from qualified picks
     if (match.prediction.btts.is_qualified) return 'BTTS';
     if (match.prediction.over25.is_qualified) return 'OVER 2.5';
     if (match.prediction.low_scoring.is_qualified) return 'UNDER 2.5';
@@ -192,7 +183,6 @@ export default function MatchDetailScreen() {
 
   const getReasoning = () => {
     if (match.gemini) return match.gemini.reasoning;
-    // Generate reasoning from stats
     const homeAttack = match.home_stats.avg_goals_scored_last_7.toFixed(2);
     const homeDef = match.home_stats.avg_goals_conceded_last_7.toFixed(2);
     const awayAttack = match.away_stats.avg_goals_scored_last_7.toFixed(2);
@@ -259,8 +249,8 @@ export default function MatchDetailScreen() {
           </Text>
         </View>
         {match.trap.is_trap && (
-          <View style={styles.trapIcon}>
-            <Ionicons name="warning" size={24} color={colors.warning} />
+          <View style={[styles.trapIcon, { backgroundColor: colors.warning }]}>
+            <Ionicons name="warning" size={18} color="#FFFFFF" />
           </View>
         )}
       </View>
@@ -288,7 +278,7 @@ export default function MatchDetailScreen() {
           </View>
         </View>
 
-        {/* Deep Analysis - Always show */}
+        {/* Deep Analysis */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIndicator, { backgroundColor: colors.primary }]} />
@@ -559,7 +549,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   trapIcon: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
@@ -584,13 +578,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 20,
     paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sectionIndicator: {
     width: 4,
@@ -605,14 +599,22 @@ const styles = StyleSheet.create({
   teamsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 16,
   },
   teamCard: {
-    padding: 12,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
   },
-  teamHeader: {
-    marginBottom: 10,
+  teamHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  teamNameSection: {
+    flex: 1,
+    marginRight: 10,
   },
   teamRank: {
     fontSize: 14,
@@ -623,14 +625,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
-  chartSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  formSection: {
     marginBottom: 12,
-    gap: 10,
-  },
-  formContainer: {
-    flex: 1,
   },
   formLabel: {
     fontSize: 10,
@@ -641,20 +637,20 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   formBadge: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
   formBadgeText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
   },
   mainStats: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   statBox: {
     flex: 1,
@@ -663,17 +659,17 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   statBoxValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
   progressSection: {
-    marginTop: 6,
+    marginTop: 8,
   },
   progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 3,
+    marginBottom: 4,
   },
   progressLabel: {
     fontSize: 9,
@@ -684,19 +680,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statBar: {
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 3,
     overflow: 'hidden',
     width: '100%',
   },
   statBarFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
   },
   analysisCard: {
     borderRadius: 12,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
   },
   analysisHeader: {
     flexDirection: 'row',
@@ -732,7 +728,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   recommendationSection: {
-    marginTop: 14,
+    marginTop: 16,
   },
   recommendationLabel: {
     fontSize: 9,
@@ -749,7 +745,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   trapBanner: {
-    marginTop: 14,
+    marginTop: 16,
     padding: 12,
     borderRadius: 8,
   },
@@ -775,7 +771,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   reasoningSection: {
-    marginTop: 14,
+    marginTop: 16,
   },
   reasoningLabel: {
     fontSize: 9,
@@ -786,18 +782,18 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   fullAnalysisSection: {
-    marginTop: 14,
+    marginTop: 16,
   },
   h2hCard: {
     borderRadius: 12,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
   },
   h2hHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   h2hHeaderLeft: {
     flexDirection: 'row',
@@ -819,7 +815,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   h2hBarContainer: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   h2hBar: {
     flexDirection: 'row',
@@ -846,7 +842,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   h2hStats: {
-    gap: 10,
+    gap: 12,
   },
   h2hStatRow: {
     flexDirection: 'row',
@@ -890,10 +886,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pickCard: {
-    padding: 12,
+    padding: 14,
     borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   pickCardHeader: {
     flexDirection: 'row',
@@ -910,8 +906,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pickReason: {
-    marginTop: 4,
-    fontSize: 11,
+    marginTop: 6,
+    fontSize: 12,
     marginLeft: 26,
   },
   bottomPadding: {
