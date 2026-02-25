@@ -15,6 +15,7 @@ import { useTheme } from '../src/context/ThemeContext';
 import { fetchLeagues, fetchMatches, League, Match } from '../src/services/api';
 import MatchCard from '../src/components/MatchCard';
 import LeagueFilter from '../src/components/LeagueFilter';
+import DateSelector from '../src/components/DateSelector';
 
 interface TimeGroup {
   label: string;
@@ -29,22 +30,23 @@ export default function HomeScreen() {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const getCurrentDate = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+  const formatDateForApi = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
-  const loadData = async () => {
+  const loadData = async (date: Date) => {
     try {
+      setLoading(true);
       const [leaguesData, matchesData] = await Promise.all([
         fetchLeagues(),
-        fetchMatches(getCurrentDate()),
+        fetchMatches(formatDateForApi(date)),
       ]);
       setLeagues(leaguesData);
       setMatches(matchesData);
@@ -57,13 +59,17 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(selectedDate);
+  }, [selectedDate]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadData();
-  }, []);
+    loadData(selectedDate);
+  }, [selectedDate]);
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+  };
 
   const filteredMatches = selectedLeague
     ? matches.filter((m) => m.league === selectedLeague)
@@ -106,17 +112,6 @@ export default function HomeScreen() {
     });
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading matches...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.divider }]}>
@@ -133,55 +128,64 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      <DateSelector selectedDate={selectedDate} onDateChange={handleDateChange} />
+
       <LeagueFilter
         leagues={leagues}
         selectedLeague={selectedLeague}
         onSelectLeague={setSelectedLeague}
       />
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredMatches.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="football-outline" size={64} color={colors.textMuted} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Matches Today</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Check back later for upcoming match analysis
-            </Text>
-          </View>
-        ) : (
-          timeGroups.map((group, index) => (
-            <View key={index} style={styles.timeGroup}>
-              <View style={styles.timeGroupHeader}>
-                <Ionicons name="time-outline" size={16} color={colors.primary} />
-                <Text style={[styles.timeGroupLabel, { color: colors.primary }]}>
-                  {group.label}
-                </Text>
-                <Text style={[styles.matchCount, { color: colors.textMuted }]}>
-                  {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
-                </Text>
-              </View>
-              {group.matches.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  onPress={() => navigateToMatch(match)}
-                />
-              ))}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading matches...</Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {filteredMatches.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="football-outline" size={64} color={colors.textMuted} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Matches</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                No matches available for this date. Try another day.
+              </Text>
             </View>
-          ))
-        )}
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+          ) : (
+            timeGroups.map((group, index) => (
+              <View key={index} style={styles.timeGroup}>
+                <View style={styles.timeGroupHeader}>
+                  <Ionicons name="time-outline" size={16} color={colors.primary} />
+                  <Text style={[styles.timeGroupLabel, { color: colors.primary }]}>
+                    {group.label}
+                  </Text>
+                  <Text style={[styles.matchCount, { color: colors.textMuted }]}>
+                    {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
+                  </Text>
+                </View>
+                {group.matches.map((match) => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    onPress={() => navigateToMatch(match)}
+                  />
+                ))}
+              </View>
+            ))
+          )}
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -195,18 +199,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   titleContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 2,
   },
   themeButton: {
@@ -228,7 +232,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 80,
   },
   emptyTitle: {
     fontSize: 20,
@@ -242,7 +246,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   timeGroup: {
-    marginTop: 16,
+    marginTop: 12,
   },
   timeGroupHeader: {
     flexDirection: 'row',

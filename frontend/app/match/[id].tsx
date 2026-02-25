@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,8 @@ export default function MatchDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { matchData } = useLocalSearchParams();
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap
 
   const match: Match = useMemo(() => {
     try {
@@ -56,10 +59,10 @@ export default function MatchDetailScreen() {
     );
   };
 
-  const renderStatBar = (value: number, maxValue: number, color: string, width: number = 100) => {
+  const renderStatBar = (value: number, maxValue: number, color: string) => {
     const percentage = Math.min((value / maxValue) * 100, 100);
     return (
-      <View style={[styles.statBar, { width, backgroundColor: colors.border }]}>
+      <View style={[styles.statBar, { backgroundColor: colors.border }]}>
         <View
           style={[styles.statBarFill, { width: `${percentage}%`, backgroundColor: color }]}
         />
@@ -74,77 +77,70 @@ export default function MatchDetailScreen() {
     const recentConcededPercent = Math.round((stats.avg_goals_conceded_last_3 / 3) * 100);
 
     return (
-      <View style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.teamRank, { color: colors.accent }]}>#{stats.rank}</Text>
-        <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-          {stats.name}
-        </Text>
+      <View style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth }]}>
+        <View style={styles.teamHeader}>
+          <Text style={[styles.teamRank, { color: colors.accent }]}>#{stats.rank}</Text>
+          <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
+            {stats.name}
+          </Text>
+        </View>
 
-        {/* Circular Progress for Win Rate */}
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressCircle, { borderColor: colors.border }]}>
-            <View
-              style={[
-                styles.progressArc,
-                {
-                  borderColor: isHome ? colors.error : colors.accent,
-                  borderTopColor: 'transparent',
-                  borderRightColor: 'transparent',
-                  transform: [{ rotate: `${(winRatePercent / 100) * 360}deg` }],
-                },
-              ]}
-            />
-          </View>
-          <View style={styles.formContainer}>
-            <Text style={[styles.formLabel, { color: colors.textMuted }]}>Form</Text>
-            <View style={styles.formRow}>
-              {stats.form.split('').map((r, i) => renderFormBadge(r, i))}
-            </View>
+        {/* Form Row */}
+        <View style={styles.formSection}>
+          <Text style={[styles.formLabel, { color: colors.textMuted }]}>Form</Text>
+          <View style={styles.formRow}>
+            {stats.form.split('').slice(0, 5).map((r, i) => renderFormBadge(r, i))}
           </View>
         </View>
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Points</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{stats.points}</Text>
+        {/* Main Stats */}
+        <View style={styles.mainStats}>
+          <View style={styles.statBox}>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Pts</Text>
+            <Text style={[styles.statBoxValue, { color: colors.text }]}>{stats.points}</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Win Rate</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{winRatePercent}%</Text>
+          <View style={styles.statBox}>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Win%</Text>
+            <Text style={[styles.statBoxValue, { color: colors.text }]}>{winRatePercent}%</Text>
           </View>
         </View>
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Avg Scored</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {stats.avg_goals_scored_last_7.toFixed(2)}
+        <View style={styles.mainStats}>
+          <View style={styles.statBox}>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Scored</Text>
+            <Text style={[styles.statBoxValue, { color: colors.success }]}>
+              {stats.avg_goals_scored_last_7.toFixed(1)}
             </Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Avg Conceded</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {stats.avg_goals_conceded_last_7.toFixed(2)}
+          <View style={styles.statBox}>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Conceded</Text>
+            <Text style={[styles.statBoxValue, { color: colors.error }]}>
+              {stats.avg_goals_conceded_last_7.toFixed(1)}
             </Text>
           </View>
         </View>
 
-        <View style={styles.recentStats}>
-          <View style={styles.recentStatRow}>
-            <Text style={[styles.recentLabel, { color: colors.textSecondary }]}>Recent Scored (Last 3)</Text>
-            <Text style={[styles.recentValue, { color: colors.success }]}>{recentScoredPercent}%</Text>
+        {/* Progress Bars */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressRow}>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Scored (L3)</Text>
+            <Text style={[styles.progressValue, { color: colors.success }]}>{recentScoredPercent}%</Text>
           </View>
           {renderStatBar(recentScoredPercent, 100, colors.success)}
+        </View>
 
-          <View style={[styles.recentStatRow, { marginTop: 8 }]}>
-            <Text style={[styles.recentLabel, { color: colors.textSecondary }]}>Recent Conceded (Last 3)</Text>
-            <Text style={[styles.recentValue, { color: colors.warning }]}>{recentConcededPercent}%</Text>
+        <View style={styles.progressSection}>
+          <View style={styles.progressRow}>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Conceded (L3)</Text>
+            <Text style={[styles.progressValue, { color: colors.warning }]}>{recentConcededPercent}%</Text>
           </View>
           {renderStatBar(recentConcededPercent, 100, colors.warning)}
+        </View>
 
-          <View style={[styles.recentStatRow, { marginTop: 8 }]}>
-            <Text style={[styles.recentLabel, { color: colors.textSecondary }]}>Clean Sheet Rate</Text>
-            <Text style={[styles.recentValue, { color: colors.primary }]}>{cleanSheetPercent}%</Text>
+        <View style={styles.progressSection}>
+          <View style={styles.progressRow}>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Clean Sheet</Text>
+            <Text style={[styles.progressValue, { color: colors.primary }]}>{cleanSheetPercent}%</Text>
           </View>
           {renderStatBar(cleanSheetPercent, 100, colors.primary)}
         </View>
@@ -167,13 +163,24 @@ export default function MatchDetailScreen() {
     { key: 'low_scoring', label: 'Low Scoring', data: match.prediction.low_scoring },
     {
       key: 'match_winner',
-      label: `Match Winner: ${match.prediction.match_winner.prediction === 'home' ? match.home_team : match.away_team}`,
+      label: `Winner: ${match.prediction.match_winner.prediction === 'home' ? match.home_team : match.away_team}`,
       data: match.prediction.match_winner,
     },
   ];
 
   const qualified = qualifiedPicks.filter((p) => p.data.is_qualified);
   const notQualified = qualifiedPicks.filter((p) => !p.data.is_qualified);
+
+  const renderStatBarH2H = (value: number, maxValue: number, color: string) => {
+    const percentage = Math.min((value / maxValue) * 100, 100);
+    return (
+      <View style={[styles.h2hStatBar, { backgroundColor: colors.border }]}>
+        <View
+          style={[styles.statBarFill, { width: `${percentage}%`, backgroundColor: color }]}
+        />
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -252,7 +259,7 @@ export default function MatchDetailScreen() {
                     {match.gemini.recommendation}
                   </Text>
                 </View>
-                {renderStatBar(match.gemini.confidence, 100, colors.primary, 200)}
+                {renderStatBarH2H(match.gemini.confidence, 100, colors.primary)}
               </View>
 
               {match.trap.is_trap && (
@@ -294,7 +301,7 @@ export default function MatchDetailScreen() {
           <View style={[styles.h2hCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.h2hHeader}>
               <View style={styles.h2hHeaderLeft}>
-                <Ionicons name="time-outline" size={20} color={colors.primary} />
+                <Ionicons name="time-outline" size={18} color={colors.primary} />
                 <Text style={[styles.h2hTitle, { color: colors.text }]}>Head to Head</Text>
               </View>
               <View style={[styles.matchesBadge, { backgroundColor: colors.success }]}>
@@ -309,7 +316,7 @@ export default function MatchDetailScreen() {
                   style={[
                     styles.h2hBarSegment,
                     {
-                      flex: match.h2_h.home_win_rate,
+                      flex: Math.max(match.h2_h.home_win_rate, 0.01),
                       backgroundColor: colors.primary,
                       borderTopLeftRadius: 4,
                       borderBottomLeftRadius: 4,
@@ -319,14 +326,14 @@ export default function MatchDetailScreen() {
                 <View
                   style={[
                     styles.h2hBarSegment,
-                    { flex: match.h2_h.draw_rate, backgroundColor: colors.textMuted },
+                    { flex: Math.max(match.h2_h.draw_rate, 0.01), backgroundColor: colors.textMuted },
                   ]}
                 />
                 <View
                   style={[
                     styles.h2hBarSegment,
                     {
-                      flex: match.h2_h.away_win_rate,
+                      flex: Math.max(match.h2_h.away_win_rate, 0.01),
                       backgroundColor: colors.error,
                       borderTopRightRadius: 4,
                       borderBottomRightRadius: 4,
@@ -360,21 +367,27 @@ export default function MatchDetailScreen() {
             <View style={styles.h2hStats}>
               <View style={styles.h2hStatRow}>
                 <Text style={[styles.h2hStatLabel, { color: colors.text }]}>BTTS</Text>
-                {renderStatBar(match.h2_h.btts_rate * 100, 100, colors.primary, 150)}
+                <View style={styles.h2hStatBarWrapper}>
+                  {renderStatBarH2H(match.h2_h.btts_rate * 100, 100, colors.primary)}
+                </View>
                 <Text style={[styles.h2hStatValue, { color: colors.primary }]}>
                   {Math.round(match.h2_h.btts_rate * 100)}%
                 </Text>
               </View>
               <View style={styles.h2hStatRow}>
                 <Text style={[styles.h2hStatLabel, { color: colors.text }]}>Over 2.5</Text>
-                {renderStatBar(match.h2_h.over25_rate * 100, 100, colors.warning, 150)}
+                <View style={styles.h2hStatBarWrapper}>
+                  {renderStatBarH2H(match.h2_h.over25_rate * 100, 100, colors.warning)}
+                </View>
                 <Text style={[styles.h2hStatValue, { color: colors.warning }]}>
                   {Math.round(match.h2_h.over25_rate * 100)}%
                 </Text>
               </View>
               <View style={styles.h2hStatRow}>
-                <Text style={[styles.h2hStatLabel, { color: colors.text }]}>Avg Goals/Match</Text>
-                {renderStatBar((match.h2_h.avg_total_goals / 5) * 100, 100, colors.primary, 150)}
+                <Text style={[styles.h2hStatLabel, { color: colors.text }]}>Avg Goals</Text>
+                <View style={styles.h2hStatBarWrapper}>
+                  {renderStatBarH2H((match.h2_h.avg_total_goals / 5) * 100, 100, colors.primary)}
+                </View>
                 <Text style={[styles.h2hStatValue, { color: colors.primary }]}>
                   {match.h2_h.avg_total_goals.toFixed(1)}
                 </Text>
@@ -391,7 +404,7 @@ export default function MatchDetailScreen() {
           </View>
 
           <View style={[styles.radarContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <RadarChart data={radarData} size={280} />
+            <RadarChart data={radarData} size={Math.min(width - 64, 280)} />
           </View>
         </View>
 
@@ -409,12 +422,12 @@ export default function MatchDetailScreen() {
               >
                 <View style={styles.pickCardHeader}>
                   <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                  <Text style={[styles.pickLabel, { color: colors.text }]}>{pick.label}</Text>
+                  <Text style={[styles.pickLabel, { color: colors.text }]} numberOfLines={1}>{pick.label}</Text>
                   <Text style={[styles.pickProbability, { color: colors.success }]}>
                     {Math.round((pick.data.probability || pick.data.confidence || 0) * 100)}%
                   </Text>
                 </View>
-                <Text style={[styles.pickReason, { color: colors.textSecondary }]}>
+                <Text style={[styles.pickReason, { color: colors.textSecondary }]} numberOfLines={2}>
                   {pick.data.reason}
                 </Text>
               </View>
@@ -436,12 +449,12 @@ export default function MatchDetailScreen() {
               >
                 <View style={styles.pickCardHeader}>
                   <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                  <Text style={[styles.pickLabel, { color: colors.text }]}>{pick.label}</Text>
+                  <Text style={[styles.pickLabel, { color: colors.text }]} numberOfLines={1}>{pick.label}</Text>
                   <Text style={[styles.pickProbability, { color: colors.textMuted }]}>
                     {Math.round((pick.data.probability || pick.data.confidence || 0) * 100)}%
                   </Text>
                 </View>
-                <Text style={[styles.pickReason, { color: colors.textSecondary }]}>
+                <Text style={[styles.pickReason, { color: colors.textSecondary }]} numberOfLines={2}>
                   {pick.data.reason}
                 </Text>
               </View>
@@ -474,11 +487,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 2,
   },
   trapIcon: {
@@ -491,85 +504,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   leagueBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 12,
   },
   leagueText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   dateText: {
-    fontSize: 14,
+    fontSize: 13,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionIndicator: {
     width: 4,
-    height: 18,
+    height: 16,
     borderRadius: 2,
     marginRight: 8,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   teamsRow: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
   },
   teamCard: {
-    flex: 1,
-    padding: 14,
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
   },
+  teamHeader: {
+    marginBottom: 8,
+  },
   teamRank: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   teamName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 2,
   },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 12,
-  },
-  progressCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressArc: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-  },
-  formContainer: {
-    flex: 1,
+  formSection: {
+    marginBottom: 10,
   },
   formLabel: {
-    fontSize: 11,
+    fontSize: 10,
     marginBottom: 4,
   },
   formRow: {
@@ -577,53 +571,52 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   formBadge: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
   formBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
   },
-  statsGrid: {
+  mainStats: {
     flexDirection: 'row',
-    marginTop: 12,
+    marginBottom: 8,
   },
-  statItem: {
+  statBox: {
     flex: 1,
   },
-  statLabel: {
-    fontSize: 10,
-    marginBottom: 2,
+  statBoxLabel: {
+    fontSize: 9,
   },
-  statValue: {
-    fontSize: 16,
+  statBoxValue: {
+    fontSize: 14,
     fontWeight: '700',
   },
-  recentStats: {
-    marginTop: 12,
+  progressSection: {
+    marginTop: 6,
   },
-  recentStatRow: {
+  progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
   },
-  recentLabel: {
+  progressLabel: {
+    fontSize: 9,
+  },
+  progressValue: {
     fontSize: 10,
-    flex: 1,
-  },
-  recentValue: {
-    fontSize: 11,
     fontWeight: '600',
   },
   statBar: {
     height: 4,
     borderRadius: 2,
     overflow: 'hidden',
+    width: '100%',
   },
   statBarFill: {
     height: '100%',
@@ -632,47 +625,47 @@ const styles = StyleSheet.create({
   analysisCard: {
     borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
+    padding: 14,
   },
   analysisHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   aiIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   analysisHeaderText: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   aiTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   aiSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 1,
   },
   confidenceContainer: {
     alignItems: 'flex-end',
   },
   confidenceValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
   },
   confidenceLabel: {
-    fontSize: 10,
+    fontSize: 9,
   },
   recommendationSection: {
-    marginTop: 16,
+    marginTop: 14,
   },
   recommendationLabel: {
-    fontSize: 10,
-    marginBottom: 8,
+    fontSize: 9,
+    marginBottom: 6,
   },
   recommendationRow: {
     flexDirection: 'row',
@@ -681,11 +674,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   recommendationText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
   },
   trapBanner: {
-    marginTop: 16,
+    marginTop: 14,
     padding: 12,
     borderRadius: 8,
   },
@@ -693,62 +686,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   trapBannerTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   trapBannerText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  reasoningSection: {
+    marginTop: 14,
+  },
+  reasoningLabel: {
+    fontSize: 9,
+    marginBottom: 6,
+  },
+  reasoningText: {
     fontSize: 13,
     lineHeight: 18,
   },
-  reasoningSection: {
-    marginTop: 16,
-  },
-  reasoningLabel: {
-    fontSize: 10,
-    marginBottom: 8,
-  },
-  reasoningText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
   fullAnalysisSection: {
-    marginTop: 16,
+    marginTop: 14,
   },
   h2hCard: {
     borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
+    padding: 14,
   },
   h2hHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   h2hHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   h2hTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   matchesBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   matchesBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   h2hBarContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   h2hBar: {
     flexDirection: 'row',
@@ -762,55 +755,64 @@ const styles = StyleSheet.create({
   h2hLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 6,
   },
   h2hLabelItem: {
     alignItems: 'center',
   },
   h2hLabelTitle: {
-    fontSize: 11,
+    fontSize: 10,
   },
   h2hLabelValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   h2hStats: {
-    gap: 12,
+    gap: 10,
   },
   h2hStatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   h2hStatLabel: {
-    width: 100,
-    fontSize: 13,
+    width: 70,
+    fontSize: 12,
     fontWeight: '500',
   },
+  h2hStatBarWrapper: {
+    flex: 1,
+    marginHorizontal: 10,
+  },
+  h2hStatBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    width: '100%',
+  },
   h2hStatValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    minWidth: 40,
+    width: 40,
     textAlign: 'right',
   },
   radarContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
   },
   picksHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 10,
   },
   picksTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   pickCard: {
-    padding: 14,
+    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
     marginBottom: 8,
@@ -822,16 +824,16 @@ const styles = StyleSheet.create({
   },
   pickLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   pickProbability: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   pickReason: {
-    marginTop: 6,
-    fontSize: 12,
+    marginTop: 4,
+    fontSize: 11,
     marginLeft: 26,
   },
   bottomPadding: {

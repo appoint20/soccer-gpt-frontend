@@ -54,6 +54,7 @@ const LeagueFilter: React.FC<LeagueFilterProps> = ({ leagues, selectedLeague, on
               styles.chipText,
               { color: selectedLeague === league.name ? '#FFFFFF' : colors.text },
             ]}
+            numberOfLines={1}
           >
             {league.name}
           </Text>
@@ -66,18 +67,21 @@ const LeagueFilter: React.FC<LeagueFilterProps> = ({ leagues, selectedLeague, on
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     gap: 8,
+    alignItems: 'center',
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
     marginRight: 8,
+    height: 32,
+    justifyContent: 'center',
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
 });
