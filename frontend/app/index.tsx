@@ -114,24 +114,30 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.divider }]}>
-        <View style={styles.titleContainer}>
-          <Text style={[styles.title, { color: colors.text }]}>Soccer AI</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>AI-Powered Match Analysis</Text>
+      {/* Compact Header */}
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <View>
+            <Text style={[styles.title, { color: colors.text }]}>Soccer AI</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>AI-Powered Match Analysis</Text>
+          </View>
+          <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
+            <Ionicons
+              name={theme === 'dark' ? 'sunny' : 'moon'}
+              size={22}
+              color={colors.text}
+            />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
-          <Ionicons
-            name={theme === 'dark' ? 'sunny' : 'moon'}
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
       </View>
 
+      {/* Dashboard Stats - Always visible */}
+      {!loading && <DashboardStats matches={matches} />}
+
+      {/* Date Selector */}
       <DateSelector selectedDate={selectedDate} onDateChange={handleDateChange} />
 
-      {!loading && matches.length > 0 && <DashboardStats matches={matches} />}
-
+      {/* League Filter */}
       <LeagueFilter
         leagues={leagues}
         selectedLeague={selectedLeague}
@@ -157,17 +163,17 @@ export default function HomeScreen() {
         >
           {filteredMatches.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="football-outline" size={64} color={colors.textMuted} />
+              <Ionicons name="football-outline" size={48} color={colors.textMuted} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>No Matches</Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                No matches available for this date. Try another day.
+                No matches available for this date.
               </Text>
             </View>
           ) : (
             timeGroups.map((group, index) => (
               <View key={index} style={styles.timeGroup}>
                 <View style={styles.timeGroupHeader}>
-                  <Ionicons name="time-outline" size={16} color={colors.primary} />
+                  <Ionicons name="time-outline" size={14} color={colors.primary} />
                   <Text style={[styles.timeGroupLabel, { color: colors.primary }]}>
                     {group.label}
                   </Text>
@@ -197,26 +203,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  titleContainer: {
-    flex: 1,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '700',
   },
   subtitle: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 1,
   },
   themeButton: {
-    padding: 8,
+    padding: 6,
   },
   content: {
     flex: 1,
@@ -228,44 +233,44 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 14,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 60,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginTop: 16,
+    marginTop: 12,
   },
   emptySubtitle: {
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: 13,
+    marginTop: 4,
     textAlign: 'center',
     paddingHorizontal: 40,
   },
   timeGroup: {
-    marginTop: 12,
+    marginTop: 8,
   },
   timeGroupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-    gap: 6,
+    paddingHorizontal: 16,
+    marginBottom: 6,
+    gap: 4,
   },
   timeGroupLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   matchCount: {
-    fontSize: 12,
+    fontSize: 11,
     marginLeft: 'auto',
   },
   bottomPadding: {
-    height: 32,
+    height: 24,
   },
 });
