@@ -13,13 +13,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
 import { Match } from '../../src/services/api';
 import RadarChart from '../../src/components/RadarChart';
+import DonutChart from '../../src/components/DonutChart';
 
 export default function MatchDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { matchData } = useLocalSearchParams();
   const { width } = useWindowDimensions();
-  const cardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap
+  const cardWidth = (width - 48) / 2;
 
   const match: Match = useMemo(() => {
     try {
@@ -75,6 +76,7 @@ export default function MatchDetailScreen() {
     const cleanSheetPercent = Math.round(stats.clean_sheet_rate * 100);
     const recentScoredPercent = Math.round((stats.avg_goals_scored_last_3 / 3) * 100);
     const recentConcededPercent = Math.round((stats.avg_goals_conceded_last_3 / 3) * 100);
+    const formPercent = stats.form_percentage || 50;
 
     return (
       <View style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth }]}>
@@ -85,37 +87,45 @@ export default function MatchDetailScreen() {
           </Text>
         </View>
 
-        {/* Form Row */}
-        <View style={styles.formSection}>
-          <Text style={[styles.formLabel, { color: colors.textMuted }]}>Form</Text>
-          <View style={styles.formRow}>
-            {stats.form.split('').slice(0, 5).map((r, i) => renderFormBadge(r, i))}
+        {/* Donut Chart for Form */}
+        <View style={styles.chartSection}>
+          <DonutChart 
+            percentage={formPercent} 
+            size={60} 
+            strokeWidth={6}
+            color={isHome ? colors.error : colors.accent}
+          />
+          <View style={styles.formContainer}>
+            <Text style={[styles.formLabel, { color: colors.textMuted }]}>Form</Text>
+            <View style={styles.formRow}>
+              {stats.form.split('').slice(0, 5).map((r, i) => renderFormBadge(r, i))}
+            </View>
           </View>
         </View>
 
         {/* Main Stats */}
         <View style={styles.mainStats}>
           <View style={styles.statBox}>
-            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Pts</Text>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Points</Text>
             <Text style={[styles.statBoxValue, { color: colors.text }]}>{stats.points}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Win%</Text>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Win Rate</Text>
             <Text style={[styles.statBoxValue, { color: colors.text }]}>{winRatePercent}%</Text>
           </View>
         </View>
 
         <View style={styles.mainStats}>
           <View style={styles.statBox}>
-            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Scored</Text>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Avg Scored</Text>
             <Text style={[styles.statBoxValue, { color: colors.success }]}>
-              {stats.avg_goals_scored_last_7.toFixed(1)}
+              {stats.avg_goals_scored_last_7.toFixed(2)}
             </Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Conceded</Text>
+            <Text style={[styles.statBoxLabel, { color: colors.textMuted }]}>Avg Conceded</Text>
             <Text style={[styles.statBoxValue, { color: colors.error }]}>
-              {stats.avg_goals_conceded_last_7.toFixed(1)}
+              {stats.avg_goals_conceded_last_7.toFixed(2)}
             </Text>
           </View>
         </View>
@@ -123,7 +133,7 @@ export default function MatchDetailScreen() {
         {/* Progress Bars */}
         <View style={styles.progressSection}>
           <View style={styles.progressRow}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Scored (L3)</Text>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Recent Scored (Last 3)</Text>
             <Text style={[styles.progressValue, { color: colors.success }]}>{recentScoredPercent}%</Text>
           </View>
           {renderStatBar(recentScoredPercent, 100, colors.success)}
@@ -131,7 +141,7 @@ export default function MatchDetailScreen() {
 
         <View style={styles.progressSection}>
           <View style={styles.progressRow}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Conceded (L3)</Text>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Recent Conceded (Last 3)</Text>
             <Text style={[styles.progressValue, { color: colors.warning }]}>{recentConcededPercent}%</Text>
           </View>
           {renderStatBar(recentConcededPercent, 100, colors.warning)}
@@ -139,7 +149,7 @@ export default function MatchDetailScreen() {
 
         <View style={styles.progressSection}>
           <View style={styles.progressRow}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Clean Sheet</Text>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Clean Sheet Rate</Text>
             <Text style={[styles.progressValue, { color: colors.primary }]}>{cleanSheetPercent}%</Text>
           </View>
           {renderStatBar(cleanSheetPercent, 100, colors.primary)}
@@ -147,6 +157,60 @@ export default function MatchDetailScreen() {
       </View>
     );
   };
+
+  // Calculate AI confidence from model predictions if gemini is not available
+  const getAIConfidence = () => {
+    if (match.gemini) return match.gemini.confidence;
+    // Calculate from model predictions
+    const avgConfidence = (
+      match.models.poisson.home_win + 
+      match.models.poisson.draw + 
+      match.models.poisson.away_win +
+      match.models.monte_carlo.home_win +
+      match.models.monte_carlo.draw +
+      match.models.monte_carlo.away_win
+    ) / 6;
+    return Math.round(Math.max(
+      match.models.poisson.home_win,
+      match.models.poisson.away_win,
+      match.models.monte_carlo.home_win,
+      match.models.monte_carlo.away_win
+    ) * 100);
+  };
+
+  const getRecommendation = () => {
+    if (match.gemini) return match.gemini.recommendation;
+    // Generate recommendation from qualified picks
+    if (match.prediction.btts.is_qualified) return 'BTTS';
+    if (match.prediction.over25.is_qualified) return 'OVER 2.5';
+    if (match.prediction.low_scoring.is_qualified) return 'UNDER 2.5';
+    if (match.prediction.match_winner.is_qualified) {
+      return match.prediction.match_winner.prediction === 'home' ? match.home_team : match.away_team;
+    }
+    return 'No Clear Pick';
+  };
+
+  const getReasoning = () => {
+    if (match.gemini) return match.gemini.reasoning;
+    // Generate reasoning from stats
+    const homeAttack = match.home_stats.avg_goals_scored_last_7.toFixed(2);
+    const homeDef = match.home_stats.avg_goals_conceded_last_7.toFixed(2);
+    const awayAttack = match.away_stats.avg_goals_scored_last_7.toFixed(2);
+    const awayDef = match.away_stats.avg_goals_conceded_last_7.toFixed(2);
+    return `${match.home_team} averages ${homeAttack} goals scored and ${homeDef} conceded. ${match.away_team} averages ${awayAttack} goals scored and ${awayDef} conceded. Based on recent form and statistical models.`;
+  };
+
+  const getFullAnalysis = () => {
+    if (match.gemini) return match.gemini.full_analysis;
+    const poisson = match.models.poisson;
+    const mc = match.models.monte_carlo;
+    return `Poisson Model: Home ${Math.round(poisson.home_win * 100)}%, Draw ${Math.round(poisson.draw * 100)}%, Away ${Math.round(poisson.away_win * 100)}%. Monte Carlo (${mc.simulation_count} simulations): Home ${Math.round(mc.home_win * 100)}%, Draw ${Math.round(mc.draw * 100)}%, Away ${Math.round(mc.away_win * 100)}%. BTTS probability: ${Math.round(poisson.btts * 100)}%. Over 2.5 probability: ${Math.round(poisson.over25 * 100)}%.`;
+  };
+
+  const aiConfidence = getAIConfidence();
+  const recommendation = getRecommendation();
+  const reasoning = getReasoning();
+  const fullAnalysis = getFullAnalysis();
 
   const radarData = [
     { label: 'OVER 2.5', value: Math.round(match.prediction.over25.probability * 100) },
@@ -224,72 +288,72 @@ export default function MatchDetailScreen() {
           </View>
         </View>
 
-        {/* Deep Analysis */}
-        {match.gemini && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIndicator, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Deep Analysis</Text>
+        {/* Deep Analysis - Always show */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIndicator, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Deep Analysis</Text>
+          </View>
+
+          <View style={[styles.analysisCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.analysisHeader}>
+              <View style={[styles.aiIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="sparkles" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.analysisHeaderText}>
+                <Text style={[styles.aiTitle, { color: colors.text }]}>AI Analysis</Text>
+                <Text style={[styles.aiSubtitle, { color: colors.textMuted }]}>
+                  Deep reasoning & trap detection
+                </Text>
+              </View>
+              <View style={styles.confidenceContainer}>
+                <Text style={[styles.confidenceValue, { color: colors.primary }]}>
+                  {aiConfidence}%
+                </Text>
+                <Text style={[styles.confidenceLabel, { color: colors.textMuted }]}>CONFIDENCE</Text>
+              </View>
             </View>
 
-            <View style={[styles.analysisCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.analysisHeader}>
-                <View style={[styles.aiIcon, { backgroundColor: colors.primary + '20' }]}>
-                  <Ionicons name="sparkles" size={20} color={colors.primary} />
-                </View>
-                <View style={styles.analysisHeaderText}>
-                  <Text style={[styles.aiTitle, { color: colors.text }]}>AI Analysis</Text>
-                  <Text style={[styles.aiSubtitle, { color: colors.textMuted }]}>
-                    Deep reasoning & trap detection
-                  </Text>
-                </View>
-                <View style={styles.confidenceContainer}>
-                  <Text style={[styles.confidenceValue, { color: colors.primary }]}>
-                    {match.gemini.confidence}%
-                  </Text>
-                  <Text style={[styles.confidenceLabel, { color: colors.textMuted }]}>CONFIDENCE</Text>
-                </View>
+            <View style={styles.recommendationSection}>
+              <Text style={[styles.recommendationLabel, { color: colors.textMuted }]}>RECOMMENDATION</Text>
+              <View style={styles.recommendationRow}>
+                <Ionicons name="trending-up" size={24} color={colors.primary} />
+                <Text style={[styles.recommendationText, { color: colors.text }]}>
+                  {recommendation}
+                </Text>
               </View>
+              {renderStatBarH2H(aiConfidence, 100, colors.primary)}
+            </View>
 
-              <View style={styles.recommendationSection}>
-                <Text style={[styles.recommendationLabel, { color: colors.textMuted }]}>RECOMMENDATION</Text>
-                <View style={styles.recommendationRow}>
-                  <Ionicons name="trending-up" size={24} color={colors.primary} />
-                  <Text style={[styles.recommendationText, { color: colors.text }]}>
-                    {match.gemini.recommendation}
-                  </Text>
-                </View>
-                {renderStatBarH2H(match.gemini.confidence, 100, colors.primary)}
-              </View>
-
-              {match.trap.is_trap && (
-                <View style={[styles.trapBanner, { backgroundColor: colors.warning + '20' }]}>
-                  <View style={styles.trapBannerHeader}>
-                    <Ionicons name="warning" size={20} color={colors.warning} />
-                    <Text style={[styles.trapBannerTitle, { color: colors.warning }]}>TRAP DETECTED</Text>
+            {match.trap.is_trap && (
+              <View style={[styles.trapBanner, { backgroundColor: colors.warning + '20' }]}>
+                <View style={styles.trapBannerHeader}>
+                  <View style={[styles.trapIconSmall, { backgroundColor: colors.warning + '30' }]}>
+                    <Ionicons name="warning" size={16} color={colors.warning} />
                   </View>
-                  <Text style={[styles.trapBannerText, { color: colors.text }]}>
-                    {match.trap.reason || 'AI has identified potential misleading signals in this match. Exercise caution.'}
-                  </Text>
+                  <Text style={[styles.trapBannerTitle, { color: colors.warning }]}>TRAP DETECTED</Text>
                 </View>
-              )}
-
-              <View style={styles.reasoningSection}>
-                <Text style={[styles.reasoningLabel, { color: colors.textMuted }]}>REASONING</Text>
-                <Text style={[styles.reasoningText, { color: colors.text }]}>
-                  {match.gemini.reasoning}
+                <Text style={[styles.trapBannerText, { color: colors.text }]}>
+                  {match.trap.reason || 'AI has identified potential misleading signals in this match. Exercise caution.'}
                 </Text>
               </View>
+            )}
 
-              <View style={styles.fullAnalysisSection}>
-                <Text style={[styles.reasoningLabel, { color: colors.textMuted }]}>FULL ANALYSIS</Text>
-                <Text style={[styles.reasoningText, { color: colors.text }]}>
-                  {match.gemini.full_analysis}
-                </Text>
-              </View>
+            <View style={styles.reasoningSection}>
+              <Text style={[styles.reasoningLabel, { color: colors.textMuted }]}>REASONING</Text>
+              <Text style={[styles.reasoningText, { color: colors.text }]}>
+                {reasoning}
+              </Text>
+            </View>
+
+            <View style={styles.fullAnalysisSection}>
+              <Text style={[styles.reasoningLabel, { color: colors.textMuted }]}>FULL ANALYSIS</Text>
+              <Text style={[styles.reasoningText, { color: colors.text }]}>
+                {fullAnalysis}
+              </Text>
             </View>
           </View>
-        )}
+        </View>
 
         {/* Head to Head */}
         <View style={styles.section}>
@@ -548,7 +612,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   teamHeader: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
   teamRank: {
     fontSize: 14,
@@ -559,8 +623,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
-  formSection: {
-    marginBottom: 10,
+  chartSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 10,
+  },
+  formContainer: {
+    flex: 1,
   },
   formLabel: {
     fontSize: 10,
@@ -607,6 +677,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 9,
+    flex: 1,
   },
   progressValue: {
     fontSize: 10,
@@ -632,9 +703,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aiIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -643,7 +714,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   aiTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   aiSubtitle: {
@@ -654,7 +725,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   confidenceValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
   },
   confidenceLabel: {
@@ -674,7 +745,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   recommendationText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
   },
   trapBanner: {
@@ -688,13 +759,20 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 6,
   },
+  trapIconSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   trapBannerTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   trapBannerText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
   reasoningSection: {
     marginTop: 14,
@@ -704,8 +782,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   reasoningText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
   fullAnalysisSection: {
     marginTop: 14,

@@ -16,6 +16,7 @@ import { fetchLeagues, fetchMatches, League, Match } from '../src/services/api';
 import MatchCard from '../src/components/MatchCard';
 import LeagueFilter from '../src/components/LeagueFilter';
 import DateSelector from '../src/components/DateSelector';
+import DashboardStats from '../src/components/DashboardStats';
 
 interface TimeGroup {
   label: string;
@@ -91,7 +92,6 @@ export default function HomeScreen() {
       } else if (hour >= 18 && hour < 22) {
         groups[2].matches.push(match);
       } else {
-        // For matches outside these ranges, add to closest group
         if (hour < 12) {
           groups[0].matches.push(match);
         } else {
@@ -129,6 +129,8 @@ export default function HomeScreen() {
       </View>
 
       <DateSelector selectedDate={selectedDate} onDateChange={handleDateChange} />
+
+      {!loading && matches.length > 0 && <DashboardStats matches={matches} />}
 
       <LeagueFilter
         leagues={leagues}
