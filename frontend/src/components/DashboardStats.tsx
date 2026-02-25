@@ -89,28 +89,28 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ matches }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
   },
   statCard: {
     flex: 1,
-    padding: 10,
-    borderRadius: 10,
+    padding: 8,
+    borderRadius: 8,
     borderWidth: 1,
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 6,
+    gap: 3,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
   },
 });
