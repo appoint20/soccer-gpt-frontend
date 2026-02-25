@@ -56,23 +56,23 @@ const DateSelector: React.FC<DateSelectorProps> = ({ selectedDate, onDateChange 
         style={[styles.arrowButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
         onPress={goToPreviousDay}
       >
-        <Ionicons name="chevron-back" size={20} color={colors.text} />
+        <Ionicons name="chevron-back" size={18} color={colors.text} />
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.dateButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
         onPress={() => setShowPicker(true)}
       >
-        <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+        <Ionicons name="calendar-outline" size={16} color={colors.primary} />
         <Text style={[styles.dateText, { color: colors.text }]}>{formatDate(selectedDate)}</Text>
-        <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+        <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.arrowButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
         onPress={goToNextDay}
       >
-        <Ionicons name="chevron-forward" size={20} color={colors.text} />
+        <Ionicons name="chevron-forward" size={18} color={colors.text} />
       </TouchableOpacity>
 
       {showPicker && Platform.OS === 'android' && (
@@ -122,13 +122,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 8,
+    paddingVertical: 8,
+    gap: 10,
   },
   arrowButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -136,11 +136,11 @@ const styles = StyleSheet.create({
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    gap: 6,
+    gap: 8,
   },
   dateText: {
     fontSize: 14,

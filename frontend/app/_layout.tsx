@@ -1,10 +1,10 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 function TabBarIcon({ name, color, focused }: { name: string; color: string; focused: boolean }) {
   const { colors } = useTheme();
@@ -16,7 +16,7 @@ function TabBarIcon({ name, color, focused }: { name: string; color: string; foc
         styles.centerIcon,
         { backgroundColor: focused ? colors.primary : colors.card, borderColor: colors.border }
       ]}>
-        <Svg width={28} height={28} viewBox="0 0 24 24">
+        <Svg width={32} height={32} viewBox="0 0 24 24">
           <Path
             d="M12 2L9 9L2 12L9 15L12 22L15 15L22 12L15 9L12 2Z"
             fill={focused ? '#FFFFFF' : colors.primary}
@@ -34,8 +34,8 @@ function TabBarIcon({ name, color, focused }: { name: string; color: string; foc
   };
   
   return (
-    <View style={[styles.iconContainer, focused && { borderBottomWidth: 2, borderBottomColor: colors.primary }]}>
-      <Ionicons name={iconMap[name] as any} size={24} color={color} />
+    <View style={[styles.iconContainer, focused && { borderBottomWidth: 3, borderBottomColor: colors.primary, paddingBottom: 8 }]}>
+      <Ionicons name={iconMap[name] as any} size={28} color={color} />
     </View>
   );
 }
@@ -50,11 +50,21 @@ function TabsLayout() {
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
+            position: 'absolute',
+            bottom: 20,
+            left: 20,
+            right: 20,
             backgroundColor: colors.card,
-            borderTopColor: colors.border,
-            height: 70,
-            paddingBottom: 10,
-            paddingTop: 10,
+            borderRadius: 30,
+            height: 80,
+            paddingBottom: 0,
+            paddingTop: 0,
+            borderTopWidth: 0,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 16,
+            elevation: 10,
           },
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
@@ -106,20 +116,20 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   iconContainer: {
-    paddingVertical: 4,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
   },
   centerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -20,
-    borderWidth: 3,
+    marginTop: -30,
+    borderWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
   },
