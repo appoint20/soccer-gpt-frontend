@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,9 +6,10 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime
+import httpx
 
 
 ROOT_DIR = Path(__file__).parent
@@ -18,6 +19,9 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# External API base URL
+SOCCER_API_BASE = "https://soccer-ai-224106654560.europe-west1.run.app/api"
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -38,7 +42,35 @@ class StatusCheckCreate(BaseModel):
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Soccer AI API"}
+
+@api_router.get("/leagues")
+async def get_leagues():
+    """Fetch available leagues from external Soccer AI API"""
+    async with httpx.AsyncClient() as http_client:
+        try:
+            response = await http_client.get(f"{SOCCER_API_BASE}/leagues", timeout=30.0)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logging.error(f"Error fetching leagues: {e}")
+            return []
+
+@api_router.get("/matches")
+async def get_matches(date: str = Query(..., description="Date in YYYY-MM-DD format")):
+    """Fetch matches analysis for a specific date"""
+    async with httpx.AsyncClient() as http_client:
+        try:
+            response = await http_client.get(
+                f"{SOCCER_API_BASE}/Analysis",
+                params={"Date": date},
+                timeout=30.0
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logging.error(f"Error fetching matches: {e}")
+            return {"matches": []}
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
