@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { Colors } from '../../src/constants/colors';
 import { RadarChart } from '../../src/components/RadarChart';
+import { fetchMatchesFromApi } from '../../src/services/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // Team Form Block helper
 const FormBlock = ({ result }: { result: string }) => {
@@ -21,29 +23,88 @@ const FormBlock = ({ result }: { result: string }) => {
 };
 
 // Progress Line helper
-const ProgressLine = ({ value, label, color }: { value: number, label: string, color: string }) => (
-    <View style={styles.progressRow}>
-        <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>{label}</Text>
-            <Text style={[styles.progressValue, { color }]}>{value}%</Text>
+const ProgressLine = ({ value, maxValue = 100, label, color, isPercentage = true }: { value: number, maxValue?: number, label: string, color: string, isPercentage?: boolean }) => {
+    const widthPct = Math.min(100, (value / maxValue) * 100);
+    const displayValue = isPercentage ? `${value}%` : value.toFixed(2);
+
+    return (
+        <View style={styles.progressRow}>
+            <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>{label}</Text>
+                <Text style={[styles.progressValue, { color }]}>{displayValue}</Text>
+            </View>
+            <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${widthPct}%`, backgroundColor: color }]} />
+            </View>
         </View>
-        <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${value}%`, backgroundColor: color }]} />
-        </View>
-    </View>
-);
+    );
+};
 
 export default function MatchDetailScreen() {
-    const { id } = useLocalSearchParams();
+    const params = useLocalSearchParams();
     const router = useRouter();
+    const { t, i18n } = useTranslation();
+    // expo-router may return params as string | string[] — normalize
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const date = Array.isArray(params.date) ? params.date[0] : params.date;
+    const [matchData, setMatchData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Scaffold Data mimicking screenshots
-    const matchData = {
-        league: "Championship",
-        date: "Di., Feb. 24 • 20:45:00",
-        home: { name: "Watford", rank: 9, points: 48, winRate: 14, avgScored: 0.86, avgConceded: 1.00, recentScored: 40, recentConceded: 60, cleanSheet: 28, form: ['W', 'D', 'L', 'D', 'L'] },
-        away: { name: "Ipswich", rank: 4, points: 54, winRate: 57, avgScored: 2.00, avgConceded: 1.57, recentScored: 80, recentConceded: 0, cleanSheet: 28, form: ['L', 'W', 'D', 'L', 'W'] }
-    };
+    useEffect(() => {
+        const load = async () => {
+            if (!id || !date) {
+                console.log('[MatchDetail] missing id or date', { id, date });
+                setLoading(false);
+                return;
+            }
+            // The date param may be a full ISO string like "2026-03-06T20:00:00+00:00"
+            // The API expects just "yyyy-mm-dd"
+            const dateStr = (date as string).split('T')[0];
+            console.log('[MatchDetail] fetching with', { id, dateStr, lang: i18n.language });
+            const data: any = await fetchMatchesFromApi(dateStr, i18n.language || 'en');
+            console.log('[MatchDetail] API response matches count:', data?.matches?.length || 0);
+            if (data) {
+                const apiMatches = data.matches || (Array.isArray(data) ? data : []);
+                const found = apiMatches.find((m: any) => m.id.toString() === id.toString());
+                console.log('[MatchDetail] found match:', !!found, 'id:', id);
+                if (found) {
+                    setMatchData(found);
+                }
+            }
+            setLoading(false);
+        };
+        load();
+    }, [id, date, i18n.language]);
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Text>Loading match...</Text>
+            </View>
+        );
+    }
+
+    if (!matchData) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Text>Match not found.</Text>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+                    <Text style={{ color: Colors.primary }}>Go Back</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    const formattedDate = matchData.date ? new Date(matchData.date).toLocaleDateString(undefined, {
+        weekday: 'short', month: 'short', day: 'numeric'
+    }) + ` • ${matchData.time?.substring(0, 5) || ''}` : '';
+
+    const home = matchData.home_stats;
+    const away = matchData.away_stats;
+    const h2h = matchData.h2_h || {};
+    const preds = matchData.prediction || {};
+    const trap = matchData.trap || { is_trap: false, reason: '' };
+    const gemini = matchData.gemini || null;
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -59,7 +120,7 @@ export default function MatchDetailScreen() {
             <ScreenHeader
                 title="Match Details"
                 subtitle="Deep Dive & Analysis"
-                showWarning
+                showWarning={trap?.is_trap}
             />
 
             {/* League & Time Row */}
@@ -67,7 +128,7 @@ export default function MatchDetailScreen() {
                 <View style={styles.leagueBadge}>
                     <Text style={styles.leagueText}>{matchData.league}</Text>
                 </View>
-                <Text style={styles.dateText}>{matchData.date}</Text>
+                <Text style={styles.dateText}>{formattedDate}</Text>
             </View>
 
             {/* Section: Team Statistics */}
@@ -79,15 +140,15 @@ export default function MatchDetailScreen() {
             <View style={styles.statsGrid}>
                 {/* HOME CARD */}
                 <View style={styles.teamCard}>
-                    <Text style={[styles.teamRank, { color: '#3B82F6' }]}>#{matchData.home.rank}</Text>
-                    <Text style={styles.teamName}>{matchData.home.name}</Text>
+                    <Text style={[styles.teamRank, { color: '#3B82F6' }]}>#{home?.rank || '-'}</Text>
+                    <Text style={styles.teamName} numberOfLines={1}>{home?.name || matchData.home_team}</Text>
 
                     <View style={styles.formRow}>
                         <View style={[styles.circlePlaceholder, { borderColor: '#EF4444', borderLeftColor: '#E5E7EB' }]} />
                         <View>
                             <Text style={styles.formLabel}>Form</Text>
                             <View style={styles.formBlocks}>
-                                {matchData.home.form.map((res, i) => <FormBlock key={i} result={res} />)}
+                                {(home?.form || '').split('').map((res: string, i: number) => <FormBlock key={i} result={res} />)}
                             </View>
                         </View>
                     </View>
@@ -95,41 +156,41 @@ export default function MatchDetailScreen() {
                     <View style={styles.dataRow}>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Points</Text>
-                            <Text style={styles.dataValue}>{matchData.home.points}</Text>
+                            <Text style={styles.dataValue}>{home?.points || 0}</Text>
                         </View>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Win Rate</Text>
-                            <Text style={styles.dataValue}>{matchData.home.winRate}%</Text>
+                            <Text style={styles.dataValue}>{Math.round((home?.win_rate || 0) * 100)}%</Text>
                         </View>
                     </View>
 
                     <View style={styles.dataRow}>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Avg Scored</Text>
-                            <Text style={styles.dataValue}>{matchData.home.avgScored.toFixed(2)}</Text>
+                            <Text style={styles.dataValue}>{home?.avg_goals_scored_last_7?.toFixed(2) || '0.00'}</Text>
                         </View>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Avg Conceded</Text>
-                            <Text style={styles.dataValue}>{matchData.home.avgConceded.toFixed(2)}</Text>
+                            <Text style={styles.dataValue}>{home?.avg_goals_conceded_last_7?.toFixed(2) || '0.00'}</Text>
                         </View>
                     </View>
 
-                    <ProgressLine value={matchData.home.recentScored} label="Recent Scored (Last 3)" color="#34D399" />
-                    <ProgressLine value={matchData.home.recentConceded} label="Recent Conceded (Last 3)" color="#FBBF24" />
-                    <ProgressLine value={matchData.home.cleanSheet} label="Clean Sheet Rate" color="#3B82F6" />
+                    <ProgressLine value={home?.avg_goals_scored_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Scored (Last 3)" color="#34D399" />
+                    <ProgressLine value={home?.avg_goals_conceded_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Conceded (Last 3)" color="#FBBF24" />
+                    <ProgressLine value={Math.round((home?.clean_sheet_rate || 0) * 100)} label="Clean Sheet Rate" color="#3B82F6" />
                 </View>
 
                 {/* AWAY CARD */}
                 <View style={styles.teamCard}>
-                    <Text style={[styles.teamRank, { color: '#B91C1C' }]}>#{matchData.away.rank}</Text>
-                    <Text style={styles.teamName}>{matchData.away.name}</Text>
+                    <Text style={[styles.teamRank, { color: '#B91C1C' }]}>#{away?.rank || '-'}</Text>
+                    <Text style={styles.teamName} numberOfLines={1}>{away?.name || matchData.away_team}</Text>
 
                     <View style={styles.formRow}>
                         <View style={[styles.circlePlaceholder, { borderColor: '#EF4444', borderRightColor: '#E5E7EB' }]} />
                         <View>
                             <Text style={styles.formLabel}>Form</Text>
                             <View style={styles.formBlocks}>
-                                {matchData.away.form.map((res, i) => <FormBlock key={i} result={res} />)}
+                                {(away?.form || '').split('').map((res: string, i: number) => <FormBlock key={i} result={res} />)}
                             </View>
                         </View>
                     </View>
@@ -137,28 +198,28 @@ export default function MatchDetailScreen() {
                     <View style={styles.dataRow}>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Points</Text>
-                            <Text style={styles.dataValue}>{matchData.away.points}</Text>
+                            <Text style={styles.dataValue}>{away?.points || 0}</Text>
                         </View>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Win Rate</Text>
-                            <Text style={styles.dataValue}>{matchData.away.winRate}%</Text>
+                            <Text style={styles.dataValue}>{Math.round((away?.win_rate || 0) * 100)}%</Text>
                         </View>
                     </View>
 
                     <View style={styles.dataRow}>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Avg Scored</Text>
-                            <Text style={styles.dataValue}>{matchData.away.avgScored.toFixed(2)}</Text>
+                            <Text style={styles.dataValue}>{away?.avg_goals_scored_last_7?.toFixed(2) || '0.00'}</Text>
                         </View>
                         <View style={styles.dataCol}>
                             <Text style={styles.dataLabel}>Avg Conceded</Text>
-                            <Text style={styles.dataValue}>{matchData.away.avgConceded.toFixed(2)}</Text>
+                            <Text style={styles.dataValue}>{away?.avg_goals_conceded_last_7?.toFixed(2) || '0.00'}</Text>
                         </View>
                     </View>
 
-                    <ProgressLine value={matchData.away.recentScored} label="Recent Scored (Last 3)" color="#34D399" />
-                    <ProgressLine value={matchData.away.recentConceded} label="Recent Conceded (Last 3)" color="#FBBF24" />
-                    <ProgressLine value={matchData.away.cleanSheet} label="Clean Sheet Rate" color="#3B82F6" />
+                    <ProgressLine value={away?.avg_goals_scored_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Scored (Last 3)" color="#34D399" />
+                    <ProgressLine value={away?.avg_goals_conceded_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Conceded (Last 3)" color="#FBBF24" />
+                    <ProgressLine value={Math.round((away?.clean_sheet_rate || 0) * 100)} label="Clean Sheet Rate" color="#3B82F6" />
                 </View>
             </View>
 
@@ -168,51 +229,60 @@ export default function MatchDetailScreen() {
                 <Text style={styles.sectionTitle}>Deep Analysis</Text>
             </View>
 
-            <View style={styles.analysisCard}>
-                <View style={styles.analysisTop}>
-                    <View style={styles.aiBadge}>
-                        <Ionicons name="sparkles" size={16} color="#3B82F6" />
+            {(gemini && gemini.analysis) ? (
+                <View style={styles.analysisCard}>
+                    <View style={styles.analysisTop}>
+                        <View style={styles.aiBadge}>
+                            <Ionicons name="sparkles" size={16} color="#3B82F6" />
+                        </View>
+                        <View style={styles.aiTitles}>
+                            <Text style={styles.aiTitle}>AI Analysis</Text>
+                            <Text style={styles.aiSubtitle}>Deep reasoning & trap detection</Text>
+                        </View>
+                        <View style={styles.confidenceBlock}>
+                            <Text style={styles.confValue}>{Math.round((gemini?.confidence || 0) * 100)}%</Text>
+                            <Text style={styles.confLabel}>CONFIDENCE</Text>
+                        </View>
                     </View>
-                    <View style={styles.aiTitles}>
-                        <Text style={styles.aiTitle}>AI Analysis</Text>
-                        <Text style={styles.aiSubtitle}>Deep reasoning & trap detection</Text>
-                    </View>
-                    <View style={styles.confidenceBlock}>
-                        <Text style={styles.confValue}>66%</Text>
-                        <Text style={styles.confLabel}>CONFIDENCE</Text>
-                    </View>
-                </View>
 
-                <View style={styles.recommendationBlock}>
-                    <Text style={styles.recLabel}>RECOMMENDATION</Text>
-                    <View style={styles.recRow}>
-                        <Ionicons name="trending-up" size={24} color="#3B82F6" />
-                        <Text style={styles.recValue}>BTTS</Text>
+                    <View style={styles.recommendationBlock}>
+                        <Text style={styles.recLabel}>RECOMMENDATION</Text>
+                        <View style={styles.recRow}>
+                            <Ionicons name="trending-up" size={24} color="#3B82F6" />
+                            <Text style={styles.recValue}>{gemini?.recommendation || 'Analyzed'}</Text>
+                        </View>
+                        <View style={styles.recTrack}>
+                            <View style={[styles.recFill, { width: `${Math.round((gemini?.confidence || 0) * 100)}%` }]} />
+                        </View>
                     </View>
-                    <View style={styles.recTrack}>
-                        <View style={[styles.recFill, { width: '66%' }]} />
+
+                    {/* Trap Box */}
+                    {trap?.is_trap && (
+                        <View style={styles.trapBox}>
+                            <Ionicons name="warning" size={20} color="#F59E0B" />
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                                <Text style={styles.trapTitle}>TRAP DETECTED</Text>
+                                <Text style={styles.trapBody}>{trap.reason || 'AI has identified potential misleading signals in this match. Exercise caution.'}</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    <View style={styles.textBlock}>
+                        <Text style={styles.textHeading}>REASONING</Text>
+                        <Text style={styles.textContent}>{gemini?.reasoning}</Text>
+                    </View>
+
+                    <View style={styles.textBlock}>
+                        <Text style={styles.textHeading}>FULL ANALYSIS</Text>
+                        <Text style={[styles.textContent, { color: '#9CA3AF' }]}>{gemini?.analysis}</Text>
                     </View>
                 </View>
-
-                {/* Trap Box */}
-                <View style={styles.trapBox}>
-                    <Ionicons name="warning" size={20} color="#F59E0B" />
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.trapTitle}>TRAP DETECTED</Text>
-                        <Text style={styles.trapBody}>AI has identified potential misleading signals in this match. Exercise caution.</Text>
-                    </View>
+            ) : (
+                <View style={[styles.analysisCard, { alignItems: 'center', paddingVertical: 40 }]}>
+                    <Ionicons name="time-outline" size={40} color="#D1D5DB" />
+                    <Text style={{ marginTop: 10, color: '#6B7280', fontWeight: '500' }}>Deep analysis pending or unavailable.</Text>
                 </View>
-
-                <View style={styles.textBlock}>
-                    <Text style={styles.textHeading}>REASONING</Text>
-                    <Text style={styles.textContent}>Ipswich is a chaos team: scoring 2.00 and conceding 1.57. Watford is weak (0.86 scored) but Ipswich's defense allows chances.</Text>
-                </View>
-
-                <View style={styles.textBlock}>
-                    <Text style={styles.textHeading}>FULL ANALYSIS</Text>
-                    <Text style={[styles.textContent, { color: '#9CA3AF' }]}>Ipswich is the driving force here, averaging 2.00 goals scored and 1.57 conceded. They play open, attacking football. Watford's attack is poor (0.86), but against a defense conceding 1.57, they will get chances. The trap here is the model favoring Watford to win; statistically, Ipswich is the more dangerous side. However, rather than guessing the winner in a trap game, the goal markets are clearer. Ipswich's leaky defense combined with their potent attack screams BTTS.</Text>
-                </View>
-            </View>
+            )}
 
             {/* Section: Head to Head */}
             <View style={styles.sectionHeader}>
@@ -220,59 +290,58 @@ export default function MatchDetailScreen() {
                 <Text style={styles.sectionTitle}>Head to Head</Text>
             </View>
 
-            <View style={styles.h2hCard}>
-                <View style={styles.h2hTop}>
-                    <View style={styles.h2hLogBox}>
-                        <Ionicons name="time-outline" size={20} color="#3B82F6" />
-                        <Text style={styles.h2hTitle}>Head to Head</Text>
+            {h2h?.matches_analyzed > 0 ? (
+                <View style={styles.h2hCard}>
+                    <View style={styles.h2hTop}>
+                        <View style={styles.h2hLogBox}>
+                            <Ionicons name="time-outline" size={20} color="#3B82F6" />
+                            <Text style={styles.h2hTitle}>Head to Head</Text>
+                        </View>
+                        <View style={styles.matchesBadge}>
+                            <Text style={styles.matchesText}>{h2h.matches_analyzed} Matches</Text>
+                        </View>
                     </View>
-                    <View style={styles.matchesBadge}>
-                        <Text style={styles.matchesText}>3 Matches</Text>
-                    </View>
-                </View>
 
-                {/* 1x2 split bar */}
-                <View style={styles.splitLineTrack}>
-                    <View style={[styles.splitHome, { width: '0%' }]} />
-                    <View style={[styles.splitDraw, { width: '67%' }]} />
-                    <View style={[styles.splitAway, { width: '33%' }]} />
-                </View>
-                <View style={styles.splitLabels}>
-                    <View style={{ alignItems: 'flex-start' }}>
-                        <Text style={styles.slTitle}>Home</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <View style={[styles.slDot, { backgroundColor: '#34D399' }]} />
-                            <Text style={[styles.slValue, { color: '#34D399' }]}>0%</Text>
+                    {/* 1x2 split bar */}
+                    <View style={styles.splitLineTrack}>
+                        <View style={[styles.splitHome, { width: `${Math.round(h2h.home_win_rate * 100)}%` }]} />
+                        <View style={[styles.splitDraw, { width: `${Math.round(h2h.draw_rate * 100)}%` }]} />
+                        <View style={[styles.splitAway, { width: `${Math.round(h2h.away_win_rate * 100)}%` }]} />
+                    </View>
+                    <View style={styles.splitLabels}>
+                        <View style={{ alignItems: 'flex-start' }}>
+                            <Text style={styles.slTitle}>Home</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View style={[styles.slDot, { backgroundColor: '#34D399' }]} />
+                                <Text style={[styles.slValue, { color: '#34D399' }]}>{Math.round(h2h.home_win_rate * 100)}%</Text>
+                            </View>
+                        </View>
+                        <View style={{ alignItems: 'center' }}>
+                            <Text style={styles.slTitle}>Draw</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View style={[styles.slDot, { backgroundColor: '#818CF8' }]} />
+                                <Text style={[styles.slValue, { color: '#818CF8' }]}>{Math.round(h2h.draw_rate * 100)}%</Text>
+                            </View>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={styles.slTitle}>Away</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View style={[styles.slDot, { backgroundColor: '#EF4444' }]} />
+                                <Text style={[styles.slValue, { color: '#EF4444' }]}>{Math.round(h2h.away_win_rate * 100)}%</Text>
+                            </View>
                         </View>
                     </View>
-                    <View style={{ alignItems: 'center' }}>
-                        <Text style={styles.slTitle}>Draw</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <View style={[styles.slDot, { backgroundColor: '#818CF8' }]} />
-                            <Text style={[styles.slValue, { color: '#818CF8' }]}>67%</Text>
-                        </View>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.slTitle}>Away</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <View style={[styles.slDot, { backgroundColor: '#EF4444' }]} />
-                            <Text style={[styles.slValue, { color: '#EF4444' }]}>33%</Text>
-                        </View>
-                    </View>
-                </View>
 
-                <ProgressLine value={67} label="BTTS" color="#818CF8" />
-                <ProgressLine value={33} label="Over 2.5" color="#FBBF24" />
-                <View style={styles.progressRow}>
-                    <View style={styles.progressHeader}>
-                        <Text style={styles.progressLabel}>Avg Goals/Match</Text>
-                        <Text style={[styles.progressValue, { color: '#0EA5E9' }]}>1.7</Text>
-                    </View>
-                    <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `60%`, backgroundColor: '#0EA5E9' }]} />
-                    </View>
+                    <ProgressLine value={Math.round(h2h.btts_rate * 100)} label="BTTS" color="#818CF8" />
+                    <ProgressLine value={Math.round(h2h.over25_rate * 100)} label="Over 2.5" color="#FBBF24" />
+                    <ProgressLine value={h2h.avg_total_goals || 0} maxValue={4} isPercentage={false} label="Avg Goals/Match" color="#0EA5E9" />
                 </View>
-            </View>
+            ) : (
+                <View style={[styles.h2hCard, { alignItems: 'center', paddingVertical: 40 }]}>
+                    <Ionicons name="book-outline" size={40} color="#D1D5DB" />
+                    <Text style={{ marginTop: 10, color: '#6B7280', fontWeight: '500' }}>No Head to Head data available.</Text>
+                </View>
+            )}
 
             {/* Section: System Predictions */}
             <View style={styles.sectionHeader}>
@@ -284,11 +353,11 @@ export default function MatchDetailScreen() {
                 <RadarChart
                     size={280}
                     data={{
-                        over25: 53,
-                        btts: 66,
-                        goals23: 45,
-                        lowScore: 47,
-                        winProb: 38
+                        over25: Math.round(((preds?.over25?.probability || preds?.over25?.confidence) || 0) * 100),
+                        btts: Math.round(((preds?.btts?.probability || preds?.btts?.confidence) || 0) * 100),
+                        goals23: Math.round(((preds?.two_to_three_goals?.probability || preds?.two_to_three_goals?.confidence) || 0) * 100),
+                        lowScore: Math.round(((preds?.low_scoring?.probability || preds?.low_scoring?.confidence) || 0) * 100),
+                        winProb: Math.round(((preds?.match_winner?.probability || preds?.match_winner?.confidence) || 0) * 100)
                     }}
                 />
 
@@ -297,55 +366,36 @@ export default function MatchDetailScreen() {
                     <Text style={[styles.picksTitle, { color: '#34D399' }]}>QUALIFIED PICKS</Text>
                 </View>
 
-                <View style={[styles.pickBox, { borderColor: '#A7F3D0', backgroundColor: '#F0FDF4' }]}>
-                    <View style={styles.pickBoxTop}>
-                        <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
-                        <Text style={styles.pickBoxTitle}>Over 2.5 Goals</Text>
-                        <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>53%</Text>
-                    </View>
-                    <Text style={styles.pickBoxDesc}>Ipswich's games average over 3.5 goals total, favoring the Over.</Text>
-                </View>
-
-                <View style={[styles.pickBox, { borderColor: '#A7F3D0', backgroundColor: '#F0FDF4' }]}>
-                    <View style={styles.pickBoxTop}>
-                        <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
-                        <Text style={styles.pickBoxTitle}>Both Teams to Score</Text>
-                        <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>66%</Text>
-                    </View>
-                    <Text style={styles.pickBoxDesc}>Ipswich scores and concedes in equal measure, making BTTS a solid pick.</Text>
-                </View>
+                {Object.entries(preds)
+                    .filter(([k, v]: any) => v.is_qualified)
+                    .map(([key, p]: any) => (
+                        <View key={`qual-${key}`} style={[styles.pickBox, { borderColor: '#A7F3D0', backgroundColor: '#F0FDF4' }]}>
+                            <View style={styles.pickBoxTop}>
+                                <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
+                                <Text style={styles.pickBoxTitle}>{key.toUpperCase().replace(/_/g, ' ')}</Text>
+                                <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>{Math.round((p.probability || p.confidence || 0) * 100)}%</Text>
+                            </View>
+                            <Text style={styles.pickBoxDesc}>{p.reason || 'AI qualifies this pick based on high-confidence algorithms.'}</Text>
+                        </View>
+                    ))}
 
                 <View style={[styles.picksHeader, { marginTop: 16 }]}>
                     <Ionicons name="close-circle-outline" size={16} color="#9CA3AF" />
                     <Text style={[styles.picksTitle, { color: '#9CA3AF' }]}>NOT QUALIFIED</Text>
                 </View>
 
-                <View style={[styles.pickBox, { borderColor: '#F3F4F6', backgroundColor: '#FFFFFF', paddingBottom: 0 }]}>
-                    <View style={styles.pickBoxTop}>
-                        <Ionicons name="close-circle-outline" size={20} color="#9CA3AF" />
-                        <Text style={[styles.pickBoxTitle, { color: '#6B7280' }]}>2-3 Goals</Text>
-                        <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>45%</Text>
-                    </View>
-                    <Text style={styles.pickBoxDesc}>Low confidence (45 % {'<'} 60%)</Text>
-                </View>
-
-                <View style={[styles.pickBox, { borderColor: '#F3F4F6', backgroundColor: '#FFFFFF', paddingBottom: 0 }]}>
-                    <View style={styles.pickBoxTop}>
-                        <Ionicons name="close-circle-outline" size={20} color="#9CA3AF" />
-                        <Text style={[styles.pickBoxTitle, { color: '#6B7280' }]}>Low Scoring</Text>
-                        <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>47%</Text>
-                    </View>
-                    <Text style={styles.pickBoxDesc}>Very unlikely given Ipswich's defensive record.</Text>
-                </View>
-
-                <View style={[styles.pickBox, { borderColor: '#F3F4F6', backgroundColor: '#FFFFFF' }]}>
-                    <View style={styles.pickBoxTop}>
-                        <Ionicons name="close-circle-outline" size={20} color="#9CA3AF" />
-                        <Text style={[styles.pickBoxTitle, { color: '#6B7280' }]}>Match Winner: Watford</Text>
-                        <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>38%</Text>
-                    </View>
-                    <Text style={styles.pickBoxDesc}>Model favors Watford, but their attack is statistically too weak to trust.</Text>
-                </View>
+                {Object.entries(preds)
+                    .filter(([k, v]: any) => !v.is_qualified)
+                    .map(([key, p]: any) => (
+                        <View key={`not-qual-${key}`} style={[styles.pickBox, { borderColor: '#F3F4F6', backgroundColor: '#FFFFFF' }]}>
+                            <View style={styles.pickBoxTop}>
+                                <Ionicons name="close-circle-outline" size={20} color="#9CA3AF" />
+                                <Text style={[styles.pickBoxTitle, { color: '#6B7280' }]}>{key.toUpperCase().replace(/_/g, ' ')}</Text>
+                                <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>{Math.round((p.probability || p.confidence || 0) * 100)}%</Text>
+                            </View>
+                            <Text style={styles.pickBoxDesc}>{p.reason || 'Low confidence score.'}</Text>
+                        </View>
+                    ))}
 
             </View>
 

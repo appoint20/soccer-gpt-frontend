@@ -5,7 +5,7 @@ import { Colors } from '../constants/colors';
 
 type Prediction = { value: string; confidence: number; is_qualified: boolean };
 export interface Match {
-    id: number; home: string; away: string; time: string; league: string; flag?: string;
+    id: number; home: string; away: string; time: string; league: string; flag?: string; date?: string;
     prediction: { over25: Prediction; btts: Prediction; two_to_three_goals: Prediction; low_scoring: Prediction; match_winner: Prediction };
 }
 

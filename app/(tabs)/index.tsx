@@ -85,6 +85,7 @@ export default function HomeScreen() {
 
                     return {
                         id: apiMatch.id,
+                        date: apiMatch.date || dateStr,
                         home: apiMatch.home_team,
                         away: apiMatch.away_team,
                         time: apiMatch.time ? apiMatch.time.substring(0, 5) : '00:00',
@@ -241,7 +242,7 @@ export default function HomeScreen() {
                                     <MatchCard
                                         key={match.id}
                                         match={match}
-                                        onPress={() => router.push({ pathname: '/match/[id]', params: { id: match.id.toString() } })}
+                                        onPress={() => router.push({ pathname: '/match/[id]', params: { id: match.id.toString(), date: match.date } })}
                                     />
                                 ))}
                             </View>

@@ -49,7 +49,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({ selectedDate, onDateChange 
                                 styles.dateCard,
                                 { backgroundColor: isSelected ? colors.primary : colors.card, borderColor: colors.border }
                             ]}
-                            onPress={() => onSelectDate(d)}
+                            onPress={() => onDateChange(d)}
                         >
                             <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : colors.textMuted }]}>
                                 {info.isToday ? 'Today' : info.day}
