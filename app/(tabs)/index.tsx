@@ -7,9 +7,7 @@ import {
     StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import LottieView from 'lottie-react-native';
-// Explicitly import the web player so the Metro prod bundler doesn't drop it
-import '@lottiefiles/react-lottie-player';
+import { LottieAnimation } from '../../src/components/LottieAnimation';
 import { Colors } from '../../src/constants/colors';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { StatGrid } from '../../src/components/StatGrid';
@@ -236,7 +234,7 @@ export default function HomeScreen() {
                 {/* Loading animation or Matches */}
                 {refreshing && matches.length === 0 ? (
                     <View style={styles.lottieContainer}>
-                        <LottieView
+                        <LottieAnimation
                             source={require('../../assets/Loading.json')}
                             autoPlay
                             loop
