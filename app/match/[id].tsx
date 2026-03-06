@@ -1,16 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { Colors } from '../../src/constants/colors';
 import { RadarChart } from '../../src/components/RadarChart';
-import { fetchMatchesFromApi } from '../../src/services/apiClient';
 import { useTranslation } from 'react-i18next';
+import Svg, { Circle as SvgCircle } from 'react-native-svg';
 
-// Team Form Block helper
+// ─── Form percentage ring ─────────────────────────────────────────────────────
+const FormRing = ({ percentage, color }: { percentage: number; color: string }) => {
+    const size = 48;
+    const strokeWidth = 4;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    return (
+        <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+            <Svg width={size} height={size} style={{ position: 'absolute' }}>
+                <SvgCircle cx={size / 2} cy={size / 2} r={radius} stroke="#E5E7EB" strokeWidth={strokeWidth} fill="none" />
+                <SvgCircle
+                    cx={size / 2} cy={size / 2} r={radius}
+                    stroke={color} strokeWidth={strokeWidth} fill="none"
+                    strokeDasharray={`${circumference}`}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                />
+            </Svg>
+            <Text style={{ fontSize: 11, fontWeight: '900', color }}>{percentage}%</Text>
+        </View>
+    );
+};
+
+// ─── Form Block helper ────────────────────────────────────────────────────────
 const FormBlock = ({ result }: { result: string }) => {
-    let bgColor = '#D1D5DB'; // Gray fallback
+    let bgColor = '#D1D5DB';
     if (result === 'W') bgColor = '#34D399';
     if (result === 'D') bgColor = '#FBBF24';
     if (result === 'L') bgColor = '#EF4444';
@@ -22,7 +48,7 @@ const FormBlock = ({ result }: { result: string }) => {
     );
 };
 
-// Progress Line helper
+// ─── Progress Line helper ─────────────────────────────────────────────────────
 const ProgressLine = ({ value, maxValue = 100, label, color, isPercentage = true }: { value: number, maxValue?: number, label: string, color: string, isPercentage?: boolean }) => {
     const widthPct = Math.min(100, (value / maxValue) * 100);
     const displayValue = isPercentage ? `${value}%` : value.toFixed(2);
@@ -43,45 +69,20 @@ const ProgressLine = ({ value, maxValue = 100, label, color, isPercentage = true
 export default function MatchDetailScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
+
     // expo-router may return params as string | string[] — normalize
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
-    const date = Array.isArray(params.date) ? params.date[0] : params.date;
-    const [matchData, setMatchData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const rawData = Array.isArray(params.rawData) ? params.rawData[0] : params.rawData;
 
-    useEffect(() => {
-        const load = async () => {
-            if (!id || !date) {
-                console.log('[MatchDetail] missing id or date', { id, date });
-                setLoading(false);
-                return;
-            }
-            // The date param may be a full ISO string like "2026-03-06T20:00:00+00:00"
-            // The API expects just "yyyy-mm-dd"
-            const dateStr = (date as string).split('T')[0];
-            console.log('[MatchDetail] fetching with', { id, dateStr, lang: i18n.language });
-            const data: any = await fetchMatchesFromApi(dateStr, i18n.language || 'en');
-            console.log('[MatchDetail] API response matches count:', data?.matches?.length || 0);
-            if (data) {
-                const apiMatches = data.matches || (Array.isArray(data) ? data : []);
-                const found = apiMatches.find((m: any) => m.id.toString() === id.toString());
-                console.log('[MatchDetail] found match:', !!found, 'id:', id);
-                if (found) {
-                    setMatchData(found);
-                }
-            }
-            setLoading(false);
-        };
-        load();
-    }, [id, date, i18n.language]);
-
-    if (loading) {
-        return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Text>Loading match...</Text>
-            </View>
-        );
+    // Parse match data directly from the passed JSON string (no re-fetch needed!)
+    let matchData: any = null;
+    try {
+        if (rawData) {
+            matchData = JSON.parse(rawData);
+        }
+    } catch (e) {
+        console.error('[MatchDetail] Failed to parse rawData:', e);
     }
 
     if (!matchData) {
@@ -144,7 +145,7 @@ export default function MatchDetailScreen() {
                     <Text style={styles.teamName} numberOfLines={1}>{home?.name || matchData.home_team}</Text>
 
                     <View style={styles.formRow}>
-                        <View style={[styles.circlePlaceholder, { borderColor: '#EF4444', borderLeftColor: '#E5E7EB' }]} />
+                        <FormRing percentage={home?.form_percentage || 0} color="#3B82F6" />
                         <View>
                             <Text style={styles.formLabel}>Form</Text>
                             <View style={styles.formBlocks}>
@@ -175,9 +176,11 @@ export default function MatchDetailScreen() {
                         </View>
                     </View>
 
-                    <ProgressLine value={home?.avg_goals_scored_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Scored (Last 3)" color="#34D399" />
-                    <ProgressLine value={home?.avg_goals_conceded_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Conceded (Last 3)" color="#FBBF24" />
-                    <ProgressLine value={Math.round((home?.clean_sheet_rate || 0) * 100)} label="Clean Sheet Rate" color="#3B82F6" />
+                    {/* Recent Stats (Last 3) header */}
+                    <Text style={styles.recentHeader}>Recent Stats (Last 3)</Text>
+                    <ProgressLine value={home?.avg_goals_scored_last_3 || 0} maxValue={3} isPercentage={false} label="Scored" color="#34D399" />
+                    <ProgressLine value={home?.avg_goals_conceded_last_3 || 0} maxValue={3} isPercentage={false} label="Conceded" color="#FBBF24" />
+                    <ProgressLine value={Math.round((home?.clean_sheet_rate || 0) * 100)} label="Clean Sheet" color="#3B82F6" />
                 </View>
 
                 {/* AWAY CARD */}
@@ -186,7 +189,7 @@ export default function MatchDetailScreen() {
                     <Text style={styles.teamName} numberOfLines={1}>{away?.name || matchData.away_team}</Text>
 
                     <View style={styles.formRow}>
-                        <View style={[styles.circlePlaceholder, { borderColor: '#EF4444', borderRightColor: '#E5E7EB' }]} />
+                        <FormRing percentage={away?.form_percentage || 0} color="#EF4444" />
                         <View>
                             <Text style={styles.formLabel}>Form</Text>
                             <View style={styles.formBlocks}>
@@ -217,9 +220,11 @@ export default function MatchDetailScreen() {
                         </View>
                     </View>
 
-                    <ProgressLine value={away?.avg_goals_scored_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Scored (Last 3)" color="#34D399" />
-                    <ProgressLine value={away?.avg_goals_conceded_last_3 || 0} maxValue={3} isPercentage={false} label="Recent Conceded (Last 3)" color="#FBBF24" />
-                    <ProgressLine value={Math.round((away?.clean_sheet_rate || 0) * 100)} label="Clean Sheet Rate" color="#3B82F6" />
+                    {/* Recent Stats (Last 3) header */}
+                    <Text style={styles.recentHeader}>Recent Stats (Last 3)</Text>
+                    <ProgressLine value={away?.avg_goals_scored_last_3 || 0} maxValue={3} isPercentage={false} label="Scored" color="#34D399" />
+                    <ProgressLine value={away?.avg_goals_conceded_last_3 || 0} maxValue={3} isPercentage={false} label="Conceded" color="#FBBF24" />
+                    <ProgressLine value={Math.round((away?.clean_sheet_rate || 0) * 100)} label="Clean Sheet" color="#3B82F6" />
                 </View>
             </View>
 
@@ -425,11 +430,12 @@ const styles = StyleSheet.create({
     teamName: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 16 },
 
     formRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-    circlePlaceholder: { width: 48, height: 48, borderRadius: 24, borderWidth: 4 },
     formLabel: { fontSize: 10, color: '#9CA3AF', marginBottom: 4, fontWeight: '600' },
     formBlocks: { flexDirection: 'row', gap: 4 },
     formBlock: { width: 14, height: 14, borderRadius: 3, justifyContent: 'center', alignItems: 'center' },
     formBlockText: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
+
+    recentHeader: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
 
     dataRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
     dataCol: { flex: 1 },

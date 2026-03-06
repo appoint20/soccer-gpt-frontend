@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
     View,
     ScrollView,
@@ -7,6 +7,7 @@ import {
     StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import LottieView from 'lottie-react-native';
 import { Colors } from '../../src/constants/colors';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { StatGrid } from '../../src/components/StatGrid';
@@ -51,6 +52,7 @@ export default function HomeScreen() {
     const [leagues, setLeagues] = useState<League[]>([]);
     const [matches, setMatches] = useState<Match[]>([]);
     const [pastStats, setPastStats] = useState<any>(null);
+    const rawApiMatchesRef = useRef<any[]>([]);
 
     const loadData = async (dateObj: Date) => {
         setRefreshing(true);
@@ -77,6 +79,8 @@ export default function HomeScreen() {
         if (response) {
             // The API response comes in as { matches: [], summary: {} } or an array
             const apiMatches = response.matches || (Array.isArray(response) ? response : []);
+            // Store the raw API match objects for passing to the detail screen
+            rawApiMatchesRef.current = apiMatches;
 
             const mappedMatches = apiMatches
                 .filter((m: any) => !m.summary) // skip summary if inline
@@ -227,28 +231,42 @@ export default function HomeScreen() {
                 {/* Date Picker */}
                 <SofascoreDatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
 
-                {/* Matches Grouped by Time */}
-                <View style={styles.matchesSection}>
-                    {groupedMatches.length === 0 ? (
-                        <View style={styles.emptyState}>
-                            <Ionicons name="football-outline" size={40} color={Colors.textMuted} />
-                            <Text style={styles.emptyText}>{t('noMatches', 'No matches for this filter')}</Text>
-                        </View>
-                    ) : (
-                        groupedMatches.map(group => (
-                            <View key={group.title} style={styles.groupContainer}>
-                                <Text style={styles.groupTitle}>{group.title}</Text>
-                                {group.data.map((match) => (
-                                    <MatchCard
-                                        key={match.id}
-                                        match={match}
-                                        onPress={() => router.push({ pathname: '/match/[id]', params: { id: match.id.toString(), date: match.date } })}
-                                    />
-                                ))}
+                {/* Loading animation or Matches */}
+                {refreshing && matches.length === 0 ? (
+                    <View style={styles.lottieContainer}>
+                        <LottieView
+                            source={require('../../assets/Loading.json')}
+                            autoPlay
+                            loop
+                            style={{ width: 120, height: 120 }}
+                        />
+                    </View>
+                ) : (
+                    <View style={styles.matchesSection}>
+                        {groupedMatches.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="football-outline" size={40} color={Colors.textMuted} />
+                                <Text style={styles.emptyText}>{t('noMatches', 'No matches for this filter')}</Text>
                             </View>
-                        ))
-                    )}
-                </View>
+                        ) : (
+                            groupedMatches.map(group => (
+                                <View key={group.title} style={styles.groupContainer}>
+                                    <Text style={styles.groupTitle}>{group.title}</Text>
+                                    {group.data.map((match) => (
+                                        <MatchCard
+                                            key={match.id}
+                                            match={match}
+                                            onPress={() => {
+                                                const raw = rawApiMatchesRef.current.find((m: any) => m.id?.toString() === match.id?.toString());
+                                                router.push({ pathname: '/match/[id]', params: { id: match.id.toString(), rawData: raw ? JSON.stringify(raw) : '' } });
+                                            }}
+                                        />
+                                    ))}
+                                </View>
+                            ))
+                        )}
+                    </View>
+                )}
 
                 {/* Bottom padding for floating nav */}
                 <View style={{ height: 130 }} />
@@ -277,4 +295,5 @@ const styles = StyleSheet.create({
     },
     emptyState: { alignItems: 'center', paddingTop: 40, gap: 10 },
     emptyText: { color: Colors.textMuted, fontSize: 14 },
+    lottieContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
 });

@@ -1,0 +1,11 @@
+node_modules
+.expo
+dist
+.git
+.github
+*.md
+.env
+.env.*
+gcp-credential.json
+ios
+android

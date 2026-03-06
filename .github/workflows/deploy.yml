@@ -8,7 +8,8 @@ on:
 
 env:
   SERVICE_NAME: soccer-ai-app
-  REGION: europe-west3 # Uses the same region as the API
+  REGION: europe-west3
+  PROJECT_ID: soccer-ai-250226
 
 jobs:
   build-and-deploy:
@@ -17,37 +18,34 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Web App
-        run: npx expo export -p web
-        env:
-          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
-          EXPO_PUBLIC_SOCCER_API_KEY: ${{ secrets.EXPO_PUBLIC_SOCCER_API_KEY }}
-
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          # If you prefer Workload Identity Federation (WIF):
-          # workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-          # service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }} \
+            --build-arg EXPO_PUBLIC_SOCCER_API_KEY=${{ secrets.EXPO_PUBLIC_SOCCER_API_KEY }} \
+            -t europe-west3-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push europe-west3-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
       - name: Deploy to Cloud Run
-        # Uses Cloud Run Source Deploy which builds the container remotely using Google Buildpacks
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --source . \
+            --image europe-west3-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
+            --port 8080 \
             --allow-unauthenticated
