@@ -311,7 +311,9 @@ export default function HomeScreen() {
                                             key={match.id}
                                             match={match}
                                             onPress={() => {
-                                                const raw = rawApiMatchesRef.current.find((m: any) => m.id?.toString() === match.id?.toString());
+                                                const raw = rawApiMatchesRef.current.find((m: any) =>
+                                                    (m.id || m.fixture_id || m.Id)?.toString() === match.id?.toString()
+                                                );
                                                 router.push({ pathname: '/match/[id]', params: { id: match.id.toString(), rawData: raw ? JSON.stringify(raw) : '' } });
                                             }}
                                         />

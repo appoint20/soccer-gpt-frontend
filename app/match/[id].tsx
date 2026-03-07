@@ -233,8 +233,7 @@ export default function MatchDetailScreen() {
                 <View style={styles.shLine} />
                 <Text style={styles.sectionTitle}>Deep Analysis</Text>
             </View>
-
-            {(gemini && gemini.analysis) ? (
+            {(gemini && gemini.recommendation) ? (
                 <View style={styles.analysisCard}>
                     <View style={styles.analysisTop}>
                         <View style={styles.aiBadge}>
@@ -276,11 +275,12 @@ export default function MatchDetailScreen() {
                         <Text style={styles.textHeading}>REASONING</Text>
                         <Text style={styles.textContent}>{gemini?.reasoning}</Text>
                     </View>
-
-                    <View style={styles.textBlock}>
-                        <Text style={styles.textHeading}>FULL ANALYSIS</Text>
-                        <Text style={[styles.textContent, { color: '#9CA3AF' }]}>{gemini?.analysis}</Text>
-                    </View>
+                    {gemini?.analysis ? (
+                        <View style={styles.textBlock}>
+                            <Text style={styles.textHeading}>FULL ANALYSIS</Text>
+                            <Text style={[styles.textContent, { color: '#9CA3AF' }]}>{gemini.analysis}</Text>
+                        </View>
+                    ) : null}
                 </View>
             ) : (
                 <View style={[styles.analysisCard, { alignItems: 'center', paddingVertical: 40 }]}>
