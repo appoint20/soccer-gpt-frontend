@@ -72,6 +72,12 @@ export default function MatchDetailScreen() {
     const router = useRouter();
     const { t } = useTranslation();
 
+    // Raw probability formatter - backend sends integers like 60
+    const parsePctRaw = (val?: number) => {
+        if (!val) return 0;
+        return Math.round(val);
+    };
+
     // expo-router may return params as string | string[] — normalize
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const rawData = Array.isArray(params.rawData) ? params.rawData[0] : params.rawData;
@@ -248,7 +254,7 @@ export default function MatchDetailScreen() {
                             <Text style={styles.aiSubtitle}>Deep reasoning & trap detection</Text>
                         </View>
                         <View style={styles.confidenceBlock}>
-                            <Text style={styles.confValue}>{Math.round((gemini?.confidence || 0) * 100)}%</Text>
+                            <Text style={styles.confValue}>{parsePctRaw(gemini?.confidence)}%</Text>
                             <Text style={styles.confLabel}>CONFIDENCE</Text>
                         </View>
                     </View>
@@ -260,7 +266,7 @@ export default function MatchDetailScreen() {
                             <Text style={styles.recValue}>{gemini?.recommendation || 'Analyzed'}</Text>
                         </View>
                         <View style={styles.recTrack}>
-                            <View style={[styles.recFill, { width: `${Math.round((gemini?.confidence || 0) * 100)}%` }]} />
+                            <View style={[styles.recFill, { width: `${parsePctRaw(gemini?.confidence)}%` }]} />
                         </View>
                     </View>
 
@@ -285,6 +291,31 @@ export default function MatchDetailScreen() {
                             <Text style={[styles.textContent, { color: '#9CA3AF' }]}>{gemini.analysis}</Text>
                         </View>
                     ) : null}
+
+                    {/* NEW: Team Strength Radar Chart */}
+                    <View style={[styles.sectionHeader, { paddingHorizontal: 0, marginTop: 24, marginBottom: 16 }]}>
+                        <View style={styles.shLine} />
+                        <Text style={styles.sectionTitle}>Team Strength Metrics</Text>
+                    </View>
+                    <View style={{ backgroundColor: '#F9FAFB', borderRadius: 16, padding: 16, alignItems: 'center' }}>
+                        <RadarChart
+                            size={260}
+                            labels={["POSSESSION", "ATTACK", "MOMENTUM", "DEFENSE", "VOLATILITY"]}
+                            data={{
+                                possession: Math.min(100, Math.round(matchData.home?.possession || 50)),
+                                attack: Math.min(100, Math.round((matchData.home?.attack_strength || 1.25) * 40)),
+                                momentum: Math.min(100, Math.round(matchData.home?.momentum || 50)),
+                                defense: 70,
+                                volatility: 50
+                            }}
+                        />
+                        <View style={{ marginTop: 12, flexDirection: 'row', gap: 20 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#38BDF8', marginRight: 6 }} />
+                                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>ATTACK & MOMENTUM</Text>
+                            </View>
+                        </View>
+                    </View>
                 </View>
             ) : (
                 <View style={[styles.analysisCard, { alignItems: 'center', paddingVertical: 40 }]}>
@@ -361,12 +392,13 @@ export default function MatchDetailScreen() {
             <View style={styles.spiderCard}>
                 <RadarChart
                     size={280}
+                    labels={["OVER 2.5", "BTTS", "2-3 GOALS", "LOW SCORE", "WIN PROB"]}
                     data={{
-                        over25: Math.round(((preds?.over25?.probability || preds?.over25?.confidence) || 0) * 100),
-                        btts: Math.round(((preds?.btts?.probability || preds?.btts?.confidence) || 0) * 100),
-                        goals23: Math.round(((preds?.two_to_three_goals?.probability || preds?.two_to_three_goals?.confidence) || 0) * 100),
-                        lowScore: Math.round(((preds?.low_scoring?.probability || preds?.low_scoring?.confidence) || 0) * 100),
-                        winProb: Math.round(((preds?.match_winner?.probability || preds?.match_winner?.confidence) || 0) * 100)
+                        "over_2.5": parsePctRaw(preds?.over25?.probability || preds?.over25?.confidence),
+                        "btts": parsePctRaw(preds?.btts?.probability || preds?.btts?.confidence),
+                        "2-3_goals": parsePctRaw(preds?.two_to_three_goals?.probability || preds?.two_to_three_goals?.confidence),
+                        "low_score": parsePctRaw(preds?.low_scoring?.probability || preds?.low_scoring?.confidence),
+                        "win_prob": parsePctRaw(preds?.match_winner?.probability || preds?.match_winner?.confidence)
                     }}
                 />
 
@@ -382,7 +414,7 @@ export default function MatchDetailScreen() {
                             <View style={styles.pickBoxTop}>
                                 <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
                                 <Text style={styles.pickBoxTitle}>{key.toUpperCase().replace(/_/g, ' ')}</Text>
-                                <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>{Math.round((p.probability || p.confidence || 0) * 100)}%</Text>
+                                <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>{parsePctRaw(p.probability || p.confidence)}%</Text>
                             </View>
                             <Text style={styles.pickBoxDesc}>{p.reason || 'AI qualifies this pick based on high-confidence algorithms.'}</Text>
                         </View>
@@ -400,7 +432,7 @@ export default function MatchDetailScreen() {
                             <View style={styles.pickBoxTop}>
                                 <Ionicons name="close-circle-outline" size={20} color="#9CA3AF" />
                                 <Text style={[styles.pickBoxTitle, { color: '#6B7280' }]}>{key.toUpperCase().replace(/_/g, ' ')}</Text>
-                                <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>{Math.round((p.probability || p.confidence || 0) * 100)}%</Text>
+                                <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>{parsePctRaw(p.probability || p.confidence)}%</Text>
                             </View>
                             <Text style={styles.pickBoxDesc}>{p.reason || 'Low confidence score.'}</Text>
                         </View>

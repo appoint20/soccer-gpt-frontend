@@ -44,9 +44,9 @@ const qualifiedCount = (m: Match) =>
         .filter((p) => p.is_qualified).length;
 
 // Helper to reliably format confidence percentage whether the API sends 0.75 or 75
-const parsePct = (val?: number) => {
+const parsePctRaw = (val?: number) => {
     if (!val) return 0;
-    return Math.round(val > 1 ? val : val * 100);
+    return Math.round(val);
 };
 
 // Module-level cache to prevent re-fetching when navigating back to the screen
@@ -133,27 +133,27 @@ export default function HomeScreen() {
                         prediction: {
                             over25: {
                                 value: pred.over25?.prediction ? 'YES' : 'NO',
-                                confidence: parsePct(pred.over25?.probability),
+                                confidence: Math.round(pred.over25?.probability || 0),
                                 is_qualified: !!pred.over25?.is_qualified
                             },
                             btts: {
                                 value: pred.btts?.prediction ? 'YES' : 'NO',
-                                confidence: parsePct(pred.btts?.probability),
+                                confidence: Math.round(pred.btts?.probability || 0),
                                 is_qualified: !!pred.btts?.is_qualified
                             },
                             two_to_three_goals: {
                                 value: pred.two_to_three_goals?.prediction ? 'YES' : 'NO',
-                                confidence: parsePct(pred.two_to_three_goals?.probability),
+                                confidence: Math.round(pred.two_to_three_goals?.probability || 0),
                                 is_qualified: !!pred.two_to_three_goals?.is_qualified
                             },
                             low_scoring: {
                                 value: pred.low_scoring?.prediction ? 'YES' : 'NO',
-                                confidence: parsePct(pred.low_scoring?.probability),
+                                confidence: Math.round(pred.low_scoring?.probability || 0),
                                 is_qualified: !!pred.low_scoring?.is_qualified
                             },
                             match_winner: {
                                 value: pred.match_winner?.prediction ? pred.match_winner.prediction.toUpperCase() : 'DRAW',
-                                confidence: parsePct(pred.match_winner?.confidence),
+                                confidence: Math.round(pred.match_winner?.confidence || 0),
                                 is_qualified: !!pred.match_winner?.is_qualified
                             },
                         }

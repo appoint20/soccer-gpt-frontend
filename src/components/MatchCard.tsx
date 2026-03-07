@@ -89,7 +89,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onPress }) => {
                 {topPick && (
                     <View style={[styles.pickBadge, isFallback && styles.fallbackBadge]}>
                         <Text style={[styles.pickBadgeText, isFallback && styles.fallbackBadgeText]}>
-                            {topPick.key} ({topPick.p.confidence}%)
+                            {topPick.key} ({Math.round(topPick.p.confidence || 0)}%)
                         </Text>
                     </View>
                 )}

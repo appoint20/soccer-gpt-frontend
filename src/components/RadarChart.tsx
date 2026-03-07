@@ -2,40 +2,36 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Polygon, Line, Text as SvgText } from 'react-native-svg';
 
-interface RadarData {
-    winProb: number;
-    btts: number;
-    goals23: number;
-    lowScore: number;
-    over25: number;
-}
-
 interface RadarChartProps {
-    data: RadarData;
+    data: Record<string, number>;
+    labels?: string[];
     size?: number;
 }
 
-export const RadarChart: React.FC<RadarChartProps> = ({ data, size = 200 }) => {
+export const RadarChart: React.FC<RadarChartProps> = ({ data, labels, size = 200 }) => {
     const center = size / 2;
     const radius = center - 30; // Leave room for labels
-    const angleStep = (Math.PI * 2) / 5;
 
-    // Ordered axis matching the mockup:
-    // Top: OVER 2.5
-    // Top Right: BTTS
-    // Bottom Right: 2-3 GOALS
-    // Bottom Left: LOW SCORE
-    // Top Left: WIN PROB
-    const labels = ["OVER 2.5", "BTTS", "2-3 GOALS", "LOW SCORE", "WIN PROB"];
+    // If labels are provided, use them. Otherwise fallback to the prediction defaults.
+    const axisLabels = labels || ["OVER 2.5", "BTTS", "2-3 GOALS", "LOW SCORE", "WIN PROB"];
+    const angleStep = (Math.PI * 2) / axisLabels.length;
 
+    // Ordered axis matching the mockup or custom labels
     // Values mapped 0-100 to 0-1 multiplier
-    const values = [
-        data.over25 / 100,
-        data.btts / 100,
-        data.goals23 / 100,
-        data.lowScore / 100,
-        data.winProb / 100
-    ];
+    const values = axisLabels.map(label => {
+        // Map label back to data key if it's the default set
+        if (!labels) {
+            if (label === "OVER 2.5") return (data.over25 || 0) / 100;
+            if (label === "BTTS") return (data.btts || 0) / 100;
+            if (label === "2-3 GOALS") return (data.goals23 || 0) / 100;
+            if (label === "LOW SCORE") return (data.lowScore || 0) / 100;
+            if (label === "WIN PROB") return (data.winProb || 0) / 100;
+        }
+
+        // For custom charts, we assume keys are lowercase versions of labels or specific keys
+        const key = label.toLowerCase().replace(/ /g, '_');
+        return (data[key] || 0) / 100;
+    });
 
     // Helper to calc coordinates
     const getPoint = (value: number, index: number) => {
@@ -59,7 +55,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({ data, size = 200 }) => {
             <Svg width={size} height={size}>
                 {/* Draw Grid Webs */}
                 {gridLevels.map((level, levelIdx) => {
-                    const levelPoints = labels.map((_, i) => getPoint(level, i));
+                    const levelPoints = axisLabels.map((_, i) => getPoint(level, i));
                     const pointsStr = levelPoints.map(p => `${p.x},${p.y}`).join(' ');
                     return (
                         <Polygon
@@ -73,7 +69,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({ data, size = 200 }) => {
                 })}
 
                 {/* Draw Axis Lines extending from center to edges */}
-                {labels.map((_, i) => {
+                {axisLabels.map((_, i) => {
                     const outerPoint = getPoint(1, i);
                     return (
                         <Line
@@ -98,7 +94,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({ data, size = 200 }) => {
                 />
 
                 {/* Draw Axis Labels */}
-                {labels.map((label, i) => {
+                {axisLabels.map((label, i) => {
                     // Push labels slightly further out than the 1.0 radius ring
                     const labelPoint = getPoint(1.2, i);
                     return (
