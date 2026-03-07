@@ -42,11 +42,21 @@ const qualifiedCount = (m: Match) =>
     [m.prediction.over25, m.prediction.btts, m.prediction.two_to_three_goals, m.prediction.low_scoring, m.prediction.match_winner]
         .filter((p) => p.is_qualified).length;
 
+// Helper to reliably format confidence percentage whether the API sends 0.75 or 75
+const parsePct = (val?: number) => {
+    if (!val) return 0;
+    return Math.round(val > 1 ? val : val * 100);
+};
+
+// Module-level cache to prevent re-fetching when navigating back to the screen
+const matchesCache: Record<string, { matches: Match[]; pastStats: any }> = {};
+
 // ─── Home Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
     const router = useRouter();
     const { t, i18n } = useTranslation();
     const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+    const [activeFilter, setActiveFilter] = useState<'matches' | 'confidence' | 'picks' | 'traps' | null>(null);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [refreshing, setRefreshing] = useState(false);
     const [leagues, setLeagues] = useState<League[]>([]);
@@ -54,8 +64,35 @@ export default function HomeScreen() {
     const [pastStats, setPastStats] = useState<any>(null);
     const rawApiMatchesRef = useRef<any[]>([]);
 
-    const loadData = async (dateObj: Date) => {
+    const loadData = async (dateObj: Date, forceRefresh = false) => {
         setRefreshing(true);
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+        const lang = i18n.language || 'en';
+        const cacheKey = `${dateStr}-${lang}`;
+
+        // Load from cache if available and not forcing refresh
+        if (!forceRefresh && matchesCache[cacheKey]) {
+            setMatches(matchesCache[cacheKey].matches);
+            setPastStats(matchesCache[cacheKey].pastStats);
+            setRefreshing(false);
+
+            // Still load leagues in background if empty
+            if (leagues.length === 0) {
+                fetchLeaguesFromApi().then((apiLeagues: any) => {
+                    if (apiLeagues && Array.isArray(apiLeagues)) {
+                        const mappedLeagues = apiLeagues.map((l: any) => ({
+                            id: l.id.toString(), name: l.name, country: l.name, flag: getFlagForLeague(l.name),
+                        }));
+                        setLeagues([{ id: 'all', name: 'All', country: 'World', flag: '🌍' }, ...mappedLeagues]);
+                    }
+                });
+            }
+            return;
+        }
+
         // Load Leagues if empty
         if (leagues.length === 0) {
             const apiLeagues: any = await fetchLeaguesFromApi();
@@ -69,14 +106,6 @@ export default function HomeScreen() {
                 setLeagues([{ id: 'all', name: 'All', country: 'World', flag: '🌍' }, ...mappedLeagues]);
             }
         }
-
-        // Format yyyy-mm-dd using LOCAL time to prevent UTC timezone shift bugs
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
-
-        const lang = i18n.language || 'en';
 
         const response: any = await fetchMatchesFromApi(dateStr, lang);
 
@@ -92,37 +121,37 @@ export default function HomeScreen() {
                     const pred = apiMatch.prediction || {};
 
                     return {
-                        id: apiMatch.id,
-                        date: apiMatch.date || dateStr,
-                        home: apiMatch.home_team,
-                        away: apiMatch.away_team,
-                        time: apiMatch.time ? apiMatch.time.substring(0, 5) : '00:00',
-                        league: apiMatch.league,
+                        id: apiMatch.id || apiMatch.Id,
+                        date: apiMatch.date || apiMatch.Date || dateStr,
+                        home: apiMatch.homeTeam || apiMatch.home_team || apiMatch.HomeTeam,
+                        away: apiMatch.awayTeam || apiMatch.away_team || apiMatch.AwayTeam,
+                        time: apiMatch.time || apiMatch.Time ? (apiMatch.time || apiMatch.Time).substring(0, 5) : '00:00',
+                        league: apiMatch.league || apiMatch.League || apiMatch.leagueName || '',
                         flag: getFlagForLeague(apiMatch.league),
                         prediction: {
                             over25: {
                                 value: pred.over25?.prediction ? 'YES' : 'NO',
-                                confidence: Math.round((pred.over25?.probability || 0) * 100),
+                                confidence: parsePct(pred.over25?.probability),
                                 is_qualified: !!pred.over25?.is_qualified
                             },
                             btts: {
                                 value: pred.btts?.prediction ? 'YES' : 'NO',
-                                confidence: Math.round((pred.btts?.probability || 0) * 100),
+                                confidence: parsePct(pred.btts?.probability),
                                 is_qualified: !!pred.btts?.is_qualified
                             },
                             two_to_three_goals: {
                                 value: pred.two_to_three_goals?.prediction ? 'YES' : 'NO',
-                                confidence: Math.round((pred.two_to_three_goals?.probability || 0) * 100),
+                                confidence: parsePct(pred.two_to_three_goals?.probability),
                                 is_qualified: !!pred.two_to_three_goals?.is_qualified
                             },
                             low_scoring: {
                                 value: pred.low_scoring?.prediction ? 'YES' : 'NO',
-                                confidence: Math.round((pred.low_scoring?.probability || 0) * 100),
+                                confidence: parsePct(pred.low_scoring?.probability),
                                 is_qualified: !!pred.low_scoring?.is_qualified
                             },
                             match_winner: {
                                 value: pred.match_winner?.prediction ? pred.match_winner.prediction.toUpperCase() : 'DRAW',
-                                confidence: Math.round((pred.match_winner?.confidence || 0) * 100),
+                                confidence: parsePct(pred.match_winner?.confidence),
                                 is_qualified: !!pred.match_winner?.is_qualified
                             },
                         }
@@ -132,14 +161,14 @@ export default function HomeScreen() {
 
             // Handle Past Stats property if bundled
             const summaryData = response.summary || (Array.isArray(response) ? response.find((r: any) => r.summary)?.summary : null);
-            if (summaryData) {
-                setPastStats(summaryData);
-            } else {
-                setPastStats(null);
-            }
+            setPastStats(summaryData || null);
+
+            // Save to cache
+            matchesCache[cacheKey] = { matches: mappedMatches, pastStats: summaryData || null };
         } else {
             setMatches([]);
             setPastStats(null);
+            matchesCache[cacheKey] = { matches: [], pastStats: null };
         }
         setRefreshing(false);
     };
@@ -149,15 +178,30 @@ export default function HomeScreen() {
     }, [selectedDate, i18n.language]);
 
     const onRefresh = useCallback(() => {
-        loadData(selectedDate);
+        loadData(selectedDate, true);
     }, [selectedDate]);
 
-    const filteredMatches = useMemo(() =>
-        (selectedLeague && selectedLeague !== 'all')
-            ? matches.filter((m) => m.league === selectedLeague)
-            : matches,
-        [selectedLeague, matches]
-    );
+    const filteredMatches = useMemo(() => {
+        let result = matches;
+
+        // Apply league filter in a strictly case-insensitive manner
+        if (selectedLeague && selectedLeague.toLowerCase() !== 'all') {
+            result = result.filter((m) => m.league?.toLowerCase().trim() === selectedLeague.toLowerCase().trim());
+        }
+
+        // Apply active stat card filter
+        if (activeFilter) {
+            if (activeFilter === 'confidence') {
+                result = result.filter(m => Object.values(m.prediction).some(p => p.is_qualified && p.confidence >= 80));
+            } else if (activeFilter === 'picks') {
+                result = result.filter(m => qualifiedCount(m) > 0);
+            } else if (activeFilter === 'traps') {
+                result = result.filter(m => m.prediction.low_scoring.is_qualified);
+            }
+        }
+
+        return result;
+    }, [selectedLeague, matches, activeFilter]);
 
     // Group matches by time block
     const groupedMatches = useMemo(() => {
@@ -209,10 +253,12 @@ export default function HomeScreen() {
                 {/* Stat Cards - Only show on today/future */}
                 {!isPastDate && (
                     <StatGrid
-                        matchCount={filteredMatches.length}
+                        matchCount={matches.length}
                         highConfidenceCount={highConf}
                         qualifiedPicksCount={totalQualified}
                         trapsCount={traps}
+                        activeFilter={activeFilter}
+                        onSelectFilter={setActiveFilter}
                     />
                 )}
 

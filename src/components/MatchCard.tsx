@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Colors } from '../constants/colors';
 
@@ -63,6 +64,12 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onPress }) => {
 
                 {/* Date & Time */}
                 <View style={styles.timeWrapper}>
+                    {match.prediction.low_scoring.is_qualified && (
+                        <View style={styles.trapWarning}>
+                            <Ionicons name="warning" size={12} color="#FFFFFF" />
+                            <Text style={styles.trapWarningText}>{t('trap', 'Fälle')}</Text>
+                        </View>
+                    )}
                     <Text style={styles.timeText}>{match.time}</Text>
                 </View>
             </View>
@@ -192,6 +199,22 @@ const styles = StyleSheet.create({
     timeWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 8,
+    },
+    trapWarning: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.traps,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 4,
+        gap: 3,
+    },
+    trapWarningText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        textTransform: 'uppercase',
     },
     timeText: {
         fontSize: 12,

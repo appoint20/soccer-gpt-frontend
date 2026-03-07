@@ -20,7 +20,7 @@ export const LeagueFilter: React.FC<LeagueFilterProps> = ({
     selectedLeague,
     onSelectLeague,
 }) => {
-    const isAll = selectedLeague === null;
+    const isAll = !selectedLeague || selectedLeague.toLowerCase() === 'all';
 
     return (
         <View style={styles.container}>
@@ -29,16 +29,7 @@ export const LeagueFilter: React.FC<LeagueFilterProps> = ({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* All */}
-                <TouchableOpacity
-                    style={[styles.chip, isAll && styles.chipActive]}
-                    onPress={() => onSelectLeague(null)}
-                    activeOpacity={0.7}
-                >
-                    <Text style={[styles.chipText, isAll && styles.chipTextActive]}>All</Text>
-                </TouchableOpacity>
-
-                {leagues.map((league) => {
+                {/* Leagues */}                {leagues.map((league) => {
                     const active = selectedLeague === league.name;
                     return (
                         <TouchableOpacity

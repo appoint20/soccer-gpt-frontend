@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Colors } from '../constants/colors';
@@ -17,6 +17,8 @@ interface StatGridProps {
     highConfidenceCount: number;
     qualifiedPicksCount: number;
     trapsCount: number;
+    activeFilter?: 'matches' | 'confidence' | 'picks' | 'traps' | null;
+    onSelectFilter?: (filter: 'matches' | 'confidence' | 'picks' | 'traps' | null) => void;
 }
 
 export const StatGrid: React.FC<StatGridProps> = ({
@@ -24,6 +26,8 @@ export const StatGrid: React.FC<StatGridProps> = ({
     highConfidenceCount,
     qualifiedPicksCount,
     trapsCount,
+    activeFilter,
+    onSelectFilter,
 }) => {
     const { t } = useTranslation();
 
@@ -34,17 +38,38 @@ export const StatGrid: React.FC<StatGridProps> = ({
         { id: 'traps', icon: 'warning-outline', label: t('statTraps', 'TRAPS DETECTED'), value: trapsCount, iconColor: Colors.traps },
     ];
 
+    const handlePress = (id: string) => {
+        if (!onSelectFilter) return;
+        // If clicking matches, or clicking the already active filter, clear it (null)
+        if (id === 'matches' || id === activeFilter) {
+            onSelectFilter(null);
+        } else {
+            onSelectFilter(id as any);
+        }
+    };
+
     return (
         <View style={styles.grid}>
-            {stats.map((stat) => (
-                <View key={stat.id} style={styles.card}>
-                    <View style={styles.cardTop}>
-                        <Ionicons name={stat.icon as any} size={18} color={stat.iconColor} />
-                        <Text style={[styles.cardLabel, { color: stat.iconColor }]}>{stat.label}</Text>
-                    </View>
-                    <Text style={[styles.cardValue, { color: stat.iconColor }]}>{stat.value}</Text>
-                </View>
-            ))}
+            {stats.map((stat) => {
+                const isActive = activeFilter === stat.id || (!activeFilter && stat.id === 'matches');
+                return (
+                    <TouchableOpacity
+                        key={stat.id}
+                        style={[
+                            styles.card,
+                            isActive && { borderColor: stat.iconColor, borderWidth: 1.5, backgroundColor: `${stat.iconColor}08` }
+                        ]}
+                        activeOpacity={0.7}
+                        onPress={() => handlePress(stat.id)}
+                    >
+                        <View style={styles.cardTop}>
+                            <Ionicons name={stat.icon as any} size={18} color={stat.iconColor} />
+                            <Text style={[styles.cardLabel, { color: stat.iconColor }]}>{stat.label}</Text>
+                        </View>
+                        <Text style={[styles.cardValue, { color: stat.iconColor }]}>{stat.value}</Text>
+                    </TouchableOpacity>
+                );
+            })}
         </View>
     );
 };
