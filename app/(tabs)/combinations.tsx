@@ -6,21 +6,31 @@ import { Colors } from '../../src/constants/colors';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { CombinationCard } from '../../src/components/CombinationCard';
 import { SofascoreDatePicker } from '../../src/components/SofascoreDatePicker';
-import { mockCombinations } from '../../src/hooks/useCombinations';
 import { useCombinations } from '../../src/hooks/useCombinations';
+import { ActivityIndicator } from 'react-native';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
 const SWIPE_OUT_DURATION = 250;
 
 export default function CombinationsScreen() {
+    const { t, i18n } = useTranslation();
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    const { t } = useTranslation();
+    // Format date specifically for the backend format: YYYY-MM-DD
+    const dateStr = useMemo(() => {
+        const y = selectedDate.getFullYear();
+        const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(selectedDate.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }, [selectedDate]);
+
     const {
-        currentIndex, savedCount, skippedCount, totalCount,
-        handleSwipeLeft, handleSwipeRight, resetCards, isFinished
-    } = useCombinations();
+        combinations, currentCombo: activeCombo, currentIndex,
+        savedCount, skippedCount, totalCount,
+        handleSwipeLeft, handleSwipeRight, resetCards,
+        isFinished, loading, error
+    } = useCombinations(dateStr, i18n.language || 'en');
 
     const position = useRef(new Animated.ValueXY()).current;
 
@@ -76,8 +86,7 @@ export default function CombinationsScreen() {
     };
 
     // Derived view variables
-    const activeCombo = mockCombinations[currentIndex];
-    const nextCombo = mockCombinations[currentIndex + 1];
+    const nextCombo = combinations[currentIndex + 1];
 
     if (isFinished) {
         return (
@@ -111,19 +120,38 @@ export default function CombinationsScreen() {
 
             {/* Stack Deck Area */}
             <View style={styles.deckContainer}>
-                {nextCombo && (
-                    <Animated.View style={[styles.stackedCard, { zIndex: 1 }]}>
-                        <CombinationCard combo={nextCombo} />
-                    </Animated.View>
-                )}
+                {loading ? (
+                    <View style={styles.centerBox}>
+                        <ActivityIndicator size="large" color={Colors.primary} />
+                        <Text style={styles.loadingText}>Analyzing Combinations...</Text>
+                    </View>
+                ) : error ? (
+                    <View style={styles.centerBox}>
+                        <Ionicons name="alert-circle-outline" size={48} color={Colors.traps} />
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                ) : combinations.length === 0 && !isFinished ? (
+                    <View style={styles.centerBox}>
+                        <Ionicons name="albums-outline" size={48} color={Colors.textSecondary} />
+                        <Text style={styles.emptyText}>No AI Combinations found for this date.</Text>
+                    </View>
+                ) : (
+                    <>
+                        {nextCombo && (
+                            <Animated.View style={[styles.stackedCard, { zIndex: 1 }]}>
+                                <CombinationCard combo={nextCombo} />
+                            </Animated.View>
+                        )}
 
-                {activeCombo && (
-                    <Animated.View
-                        {...panResponder.panHandlers}
-                        style={[getCardStyle(), styles.topCard, { zIndex: 2 }]}
-                    >
-                        <CombinationCard combo={activeCombo} />
-                    </Animated.View>
+                        {activeCombo && (
+                            <Animated.View
+                                {...panResponder.panHandlers}
+                                style={[getCardStyle(), styles.topCard, { zIndex: 2 }]}
+                            >
+                                <CombinationCard combo={activeCombo} />
+                            </Animated.View>
+                        )}
+                    </>
                 )}
             </View>
 
@@ -240,4 +268,8 @@ const styles = StyleSheet.create({
     statsText: { fontSize: 15, fontWeight: '600', color: Colors.primary },
     resetButton: { marginTop: 12, backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
     resetButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    centerBox: { alignItems: 'center', justifyContent: 'center', gap: 12 },
+    loadingText: { color: Colors.textSecondary, fontWeight: '600', marginTop: 10 },
+    errorText: { color: Colors.traps, fontWeight: '600', textAlign: 'center', paddingHorizontal: 40 },
+    emptyText: { color: Colors.textSecondary, fontWeight: '600', textAlign: 'center' },
 });

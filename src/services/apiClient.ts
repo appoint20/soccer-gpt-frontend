@@ -91,3 +91,11 @@ export const fetchLeaguesFromApi = async () => {
         return [];
     }
 };
+
+export const fetchCombinationsFromApi = (dateStr: string, lang: string = 'en') => {
+    return apiFetch<any>(`/api/combinations?date=${dateStr}&lang=${lang}`, { method: 'GET' });
+};
+
+export const triggerDailySync = () => {
+    return apiFetch<any>('/api/automation/sync-daily', { method: 'POST' });
+};

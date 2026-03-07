@@ -12,6 +12,7 @@ export interface ComboMatch {
     time: string;
     pick: string;
     confidence: number;
+    odds: number;
     isHit?: boolean;
 }
 
@@ -20,6 +21,7 @@ export interface CombinationData {
     score: number;
     type: string; // 'LOW', 'MEDIUM', 'HIGH'
     date: string;
+    reason?: string;
     matches: ComboMatch[];
 }
 
@@ -38,7 +40,7 @@ export const CombinationCard: React.FC<CombinationCardProps> = ({ combo }) => {
                     <Ionicons name="sparkles" size={14} color="#D946EF" style={styles.sparkleIcon} />
                     <Text style={styles.typeText}>{combo.type}</Text>
                 </View>
-                <Text style={styles.scoreText}>{t('score', { score: combo.score.toFixed(2) })}</Text>
+                <Text style={styles.scoreText}>Odds: {combo.score.toFixed(2)}</Text>
             </View>
 
             {/* Matches Container (the inner slightly lighter block area) */}
@@ -60,16 +62,24 @@ export const CombinationCard: React.FC<CombinationCardProps> = ({ combo }) => {
                         {/* Match Prediction row */}
                         <View style={styles.predictionRow}>
                             <Text style={styles.pickText}>{match.pick}</Text>
-                            <Text style={styles.confidenceText}>{t('confidenceLabel', { confidence: match.confidence })}</Text>
+                            <Text style={styles.confidenceText}>
+                                {match.confidence > 0
+                                    ? t('confidenceLabel', { confidence: match.confidence })
+                                    : `Odds: ${match.odds.toFixed(2)}`}
+                            </Text>
                         </View>
                     </View>
                 ))}
             </View>
 
-            {/* Inner Footer Note */}
-            <Text style={styles.footerNote}>
-                {t('bundleInfo', { count: combo.matches.length })}
-            </Text>
+            {/* Inner Footer Note / Reason */}
+            {combo.reason ? (
+                <Text style={styles.footerNote}>{combo.reason}</Text>
+            ) : (
+                <Text style={styles.footerNote}>
+                    {t('bundleInfo', { count: combo.matches.length })}
+                </Text>
+            )}
         </View>
     );
 };

@@ -181,13 +181,17 @@ export default function HomeScreen() {
         loadData(selectedDate, true);
     }, [selectedDate]);
 
-    const filteredMatches = useMemo(() => {
+    const leagueFilteredMatches = useMemo(() => {
         let result = matches;
-
         // Apply league filter in a strictly case-insensitive manner
         if (selectedLeague && selectedLeague.toLowerCase() !== 'all') {
             result = result.filter((m) => m.league?.toLowerCase().trim() === selectedLeague.toLowerCase().trim());
         }
+        return result;
+    }, [selectedLeague, matches]);
+
+    const filteredMatches = useMemo(() => {
+        let result = leagueFilteredMatches;
 
         // Apply active stat card filter
         if (activeFilter) {
@@ -201,7 +205,7 @@ export default function HomeScreen() {
         }
 
         return result;
-    }, [selectedLeague, matches, activeFilter]);
+    }, [leagueFilteredMatches, activeFilter]);
 
     // Group matches by time block
     const groupedMatches = useMemo(() => {
@@ -220,12 +224,12 @@ export default function HomeScreen() {
         })).filter(g => g.data.length > 0);
     }, [filteredMatches]);
 
-    // Stat calculations
-    const highConf = filteredMatches.filter((m) =>
+    // Stat calculations - Must use leagueFilteredMatches so numbers don't shrink when selecting a filter card!
+    const highConf = leagueFilteredMatches.filter((m) =>
         Object.values(m.prediction).some((p) => p.is_qualified && p.confidence >= 80)
     ).length;
-    const totalQualified = filteredMatches.reduce((acc, m) => acc + qualifiedCount(m), 0);
-    const traps = filteredMatches.filter((m) => m.prediction.low_scoring.is_qualified).length;
+    const totalQualified = leagueFilteredMatches.reduce((acc, m) => acc + qualifiedCount(m), 0);
+    const traps = leagueFilteredMatches.filter((m) => m.prediction.low_scoring.is_qualified).length;
 
     const isPastDate = useMemo(() => {
         const today = new Date();
@@ -253,7 +257,7 @@ export default function HomeScreen() {
                 {/* Stat Cards - Only show on today/future */}
                 {!isPastDate && (
                     <StatGrid
-                        matchCount={matches.length}
+                        matchCount={leagueFilteredMatches.length}
                         highConfidenceCount={highConf}
                         qualifiedPicksCount={totalQualified}
                         trapsCount={traps}

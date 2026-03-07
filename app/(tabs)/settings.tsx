@@ -4,10 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { useAuth } from '../../src/context/AuthContext';
+import { triggerDailySync } from '../../src/services/apiClient';
 
 export default function SettingsScreen() {
     const { t, i18n } = useTranslation();
     const { theme, colors, setTheme } = useTheme();
+    const { user } = useAuth();
 
     const changeLanguage = (lng: string) => {
         i18n.changeLanguage(lng);
@@ -83,6 +86,30 @@ export default function SettingsScreen() {
                     </View>
                 </View>
 
+                {/* Admin Section (Restricted to shivm) */}
+                {user?.username === 'shivm' && (
+                    <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('admin', 'Admin Panel')}</Text>
+
+                        <TouchableOpacity
+                            style={[styles.syncButton, { backgroundColor: colors.primary }]}
+                            onPress={async () => {
+                                try {
+                                    alert('Daily Sync started in the backend. This might take a few seconds.');
+                                    await triggerDailySync();
+                                    alert('Sync completed successfully!');
+                                } catch (e: any) {
+                                    alert(`Sync failed: ${e.message}`);
+                                }
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="refresh-circle" size={24} color="#FFFFFF" />
+                            <Text style={styles.syncButtonText}>Trigger Daily Sync</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 <View style={{ height: 120 }} />
             </ScrollView>
         </SafeAreaView>
@@ -132,5 +159,18 @@ const styles = StyleSheet.create({
     },
     flagText: {
         fontSize: 24,
+    },
+    syncButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        paddingVertical: 14,
+        borderRadius: 12,
+    },
+    syncButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
     }
 });

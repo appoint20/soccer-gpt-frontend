@@ -28,7 +28,17 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onPress }) => {
         { key: `Win ${match.prediction.match_winner.value}`, p: match.prediction.match_winner }
     ].filter(x => x.p.is_qualified).sort((a, b) => b.p.confidence - a.p.confidence);
 
-    const topPick = allPicks.length > 0 ? allPicks[0] : null;
+    let topPick = allPicks.length > 0 ? allPicks[0] : null;
+    let isFallback = false;
+
+    if (!topPick && match.prediction.match_winner) {
+        // Fallback to the AI's predicted Match Winner
+        topPick = {
+            key: `🤖 AI: Win ${match.prediction.match_winner.value}`,
+            p: match.prediction.match_winner
+        };
+        isFallback = true;
+    }
 
     // Home/Away initials
     const homeInitial = match.home.charAt(0).toUpperCase();
@@ -77,8 +87,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onPress }) => {
             {/* Badges immediately under time */}
             <View style={styles.badgesWrapper}>
                 {topPick && (
-                    <View style={styles.pickBadge}>
-                        <Text style={styles.pickBadgeText}>{topPick.key} ({topPick.p.confidence}%)</Text>
+                    <View style={[styles.pickBadge, isFallback && styles.fallbackBadge]}>
+                        <Text style={[styles.pickBadgeText, isFallback && styles.fallbackBadgeText]}>
+                            {topPick.key} ({topPick.p.confidence}%)
+                        </Text>
                     </View>
                 )}
             </View>
@@ -163,7 +175,8 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginHorizontal: 12,
         marginVertical: 6,
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 20,
         shadowColor: Colors.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.12,
@@ -236,6 +249,12 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '800',
         color: Colors.primary,
+    },
+    fallbackBadge: {
+        backgroundColor: `${Colors.accent}15`,
+    },
+    fallbackBadgeText: {
+        color: Colors.accent,
     },
     teamsRow: {
         flexDirection: 'row',
