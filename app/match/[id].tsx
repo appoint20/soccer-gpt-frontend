@@ -7,6 +7,7 @@ import { Colors } from '../../src/constants/colors';
 import { RadarChart } from '../../src/components/RadarChart';
 import { useTranslation } from 'react-i18next';
 import Svg, { Circle as SvgCircle } from 'react-native-svg';
+import { MatchDataCache } from '../../src/store/matchCache';
 
 // ─── Form percentage ring ─────────────────────────────────────────────────────
 const FormRing = ({ percentage, color }: { percentage: number; color: string }) => {
@@ -76,13 +77,16 @@ export default function MatchDetailScreen() {
     const rawData = Array.isArray(params.rawData) ? params.rawData[0] : params.rawData;
 
     // Parse match data directly from the passed JSON string (no re-fetch needed!)
-    let matchData: any = null;
-    try {
-        if (rawData) {
+    let matchData: any = MatchDataCache.get(id);
+
+    // Safely fallback to rawData purely for backwards compatibility during testing
+    if (!matchData && rawData) {
+        try {
             matchData = JSON.parse(rawData);
+            MatchDataCache.set(id, matchData);
+        } catch (e) {
+            console.error('[MatchDetail] Failed to parse rawData:', e);
         }
-    } catch (e) {
-        console.error('[MatchDetail] Failed to parse rawData:', e);
     }
 
     if (!matchData) {

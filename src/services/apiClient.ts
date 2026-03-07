@@ -4,6 +4,42 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://soccer-ai-api-10517
 const API_KEY = process.env.EXPO_PUBLIC_SOCCER_API_KEY || '';
 const TOKEN_KEY = '@soccer_ai_token';
 
+// ─── Cache Setup ──────────────────────────────────────────────────────────────
+const CACHE_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+interface CachePayload<T> {
+    timestamp: number;
+    data: T;
+}
+
+const fetchWithCache = async <T>(cacheKey: string, fetchFn: () => Promise<T>): Promise<T | null> => {
+    try {
+        const cachedDataStr = await AsyncStorage.getItem(cacheKey);
+        if (cachedDataStr) {
+            const parsed: CachePayload<T> = JSON.parse(cachedDataStr);
+            if (Date.now() - parsed.timestamp < CACHE_EXPIRY_MS) {
+                return parsed.data;
+            } else {
+                await AsyncStorage.removeItem(cacheKey);
+            }
+        }
+    } catch (e) {
+        console.warn(`[Cache] Error reading ${cacheKey}:`, e);
+    }
+
+    try {
+        const freshData = await fetchFn();
+        if (freshData) {
+            const payload: CachePayload<T> = { timestamp: Date.now(), data: freshData };
+            await AsyncStorage.setItem(cacheKey, JSON.stringify(payload));
+        }
+        return freshData;
+    } catch (error) {
+        console.error(`[API] Failed to fetch data for ${cacheKey}:`, error);
+        return null; // Ensure we always cleanly fail
+    }
+};
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 async function apiFetch<T>(
     path: string,
@@ -75,25 +111,19 @@ export const loginUser = async (
 
 // ─── Matches / Leagues ────────────────────────────────────────────────────────
 export const fetchMatchesFromApi = async (date: string, language: string = 'en') => {
-    try {
-        return await apiFetch(`/api/analyze?Date=${date}&Language=${language}`);
-    } catch (e) {
-        console.error("Match fetch failed:", e);
-        return null;
-    }
+    const cacheKey = `@cache_matches_${date}_${language}`;
+    return await fetchWithCache(cacheKey, () => apiFetch(`/api/analyze?Date=${date}&Language=${language}`));
 };
 
 export const fetchLeaguesFromApi = async () => {
-    try {
-        return await apiFetch('/api/leagues');
-    } catch (e) {
-        console.error("League fetch failed:", e);
-        return [];
-    }
+    const cacheKey = `@cache_leagues`;
+    const res = await fetchWithCache(cacheKey, () => apiFetch<any[]>('/api/leagues'));
+    return res || [];
 };
 
-export const fetchCombinationsFromApi = (dateStr: string, lang: string = 'en') => {
-    return apiFetch<any>(`/api/combinations?date=${dateStr}&lang=${lang}`, { method: 'GET' });
+export const fetchCombinationsFromApi = async (dateStr: string, lang: string = 'en') => {
+    const cacheKey = `@cache_combinations_${dateStr}_${lang}`;
+    return await fetchWithCache(cacheKey, () => apiFetch<any>(`/api/combinations?date=${dateStr}&lang=${lang}`, { method: 'GET' }));
 };
 
 export const triggerDailySync = () => {

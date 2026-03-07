@@ -120,39 +120,45 @@ export default function CombinationsScreen() {
 
             {/* Stack Deck Area */}
             <View style={styles.deckContainer}>
-                {loading ? (
+                {loading && (
                     <View style={styles.centerBox}>
                         <ActivityIndicator size="large" color={Colors.primary} />
                         <Text style={styles.loadingText}>Analyzing Combinations...</Text>
                     </View>
-                ) : error ? (
+                )}
+
+                {!loading && error ? (
                     <View style={styles.centerBox}>
                         <Ionicons name="alert-circle-outline" size={48} color={Colors.traps} />
                         <Text style={styles.errorText}>{error}</Text>
                     </View>
-                ) : combinations.length === 0 && !isFinished ? (
+                ) : null}
+
+                {!loading && !error && combinations.length === 0 && !isFinished ? (
                     <View style={styles.centerBox}>
                         <Ionicons name="albums-outline" size={48} color={Colors.textSecondary} />
                         <Text style={styles.emptyText}>No AI Combinations found for this date.</Text>
                     </View>
-                ) : (
-                    <>
-                        {nextCombo && (
+                ) : null}
+
+                {!loading && !error && combinations.length > 0 && !isFinished ? (
+                    <View style={StyleSheet.absoluteFill}>
+                        {nextCombo ? (
                             <Animated.View style={[styles.stackedCard, { zIndex: 1 }]}>
                                 <CombinationCard combo={nextCombo} />
                             </Animated.View>
-                        )}
+                        ) : null}
 
-                        {activeCombo && (
+                        {activeCombo ? (
                             <Animated.View
                                 {...panResponder.panHandlers}
                                 style={[getCardStyle(), styles.topCard, { zIndex: 2 }]}
                             >
                                 <CombinationCard combo={activeCombo} />
                             </Animated.View>
-                        )}
-                    </>
-                )}
+                        ) : null}
+                    </View>
+                ) : null}
             </View>
 
             {/* Footer Area */}

@@ -17,6 +17,7 @@ import { PastDayStats } from '../../src/components/PastDayStats';
 import { MatchCard, Match } from '../../src/components/MatchCard';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { MatchDataCache } from '../../src/store/matchCache';
 
 import { fetchMatchesFromApi, fetchLeaguesFromApi } from '../../src/services/apiClient';
 
@@ -314,7 +315,8 @@ export default function HomeScreen() {
                                                 const raw = rawApiMatchesRef.current.find((m: any) =>
                                                     (m.id || m.fixture_id || m.Id)?.toString() === match.id?.toString()
                                                 );
-                                                router.push({ pathname: '/match/[id]', params: { id: match.id.toString(), rawData: raw ? JSON.stringify(raw) : '' } });
+                                                if (raw) MatchDataCache.set(match.id.toString(), raw);
+                                                router.push({ pathname: '/match/[id]', params: { id: match.id.toString() } });
                                             }}
                                         />
                                     ))}
