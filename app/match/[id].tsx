@@ -72,10 +72,10 @@ export default function MatchDetailScreen() {
     const router = useRouter();
     const { t } = useTranslation();
 
-    // Raw probability formatter - backend sends integers like 60
-    const parsePctRaw = (val?: number) => {
+    // Smart probability formatter - handles both 0.75 and 75
+    const parsePct = (val?: number) => {
         if (!val) return 0;
-        return Math.round(val);
+        return Math.round(val >= 1 ? val : val * 100);
     };
 
     // expo-router may return params as string | string[] — normalize
@@ -110,8 +110,8 @@ export default function MatchDetailScreen() {
         weekday: 'short', month: 'short', day: 'numeric'
     }) + ` • ${matchData.time?.substring(0, 5) || ''}` : '';
 
-    const home = matchData.home_stats;
-    const away = matchData.away_stats;
+    const home = matchData.homeStats || matchData.home_stats;
+    const away = matchData.awayStats || matchData.away_stats;
     const h2h = matchData.h2_h || {};
     const preds = matchData.prediction || {};
     const trap = matchData.trap || { is_trap: false, reason: '' };
@@ -254,7 +254,7 @@ export default function MatchDetailScreen() {
                             <Text style={styles.aiSubtitle}>Deep reasoning & trap detection</Text>
                         </View>
                         <View style={styles.confidenceBlock}>
-                            <Text style={styles.confValue}>{parsePctRaw(gemini?.confidence)}%</Text>
+                            <Text style={styles.confValue}>{parsePct(gemini?.confidence)}%</Text>
                             <Text style={styles.confLabel}>CONFIDENCE</Text>
                         </View>
                     </View>
@@ -266,7 +266,7 @@ export default function MatchDetailScreen() {
                             <Text style={styles.recValue}>{gemini?.recommendation || 'Analyzed'}</Text>
                         </View>
                         <View style={styles.recTrack}>
-                            <View style={[styles.recFill, { width: `${parsePctRaw(gemini?.confidence)}%` }]} />
+                            <View style={[styles.recFill, { width: `${parsePct(gemini?.confidence)}%` }]} />
                         </View>
                     </View>
 
@@ -302,9 +302,9 @@ export default function MatchDetailScreen() {
                             size={260}
                             labels={["POSSESSION", "ATTACK", "MOMENTUM", "DEFENSE", "VOLATILITY"]}
                             data={{
-                                possession: Math.min(100, Math.round(matchData.home?.possession || 50)),
-                                attack: Math.min(100, Math.round((matchData.home?.attack_strength || 1.25) * 40)),
-                                momentum: Math.min(100, Math.round(matchData.home?.momentum || 50)),
+                                possession: Math.min(100, Math.round(home?.possession || 50)),
+                                attack: Math.min(100, Math.round((home?.attack_strength || 1.25) * 40)),
+                                momentum: Math.min(100, Math.round(home?.momentum || 50)),
                                 defense: 70,
                                 volatility: 50
                             }}
@@ -394,11 +394,11 @@ export default function MatchDetailScreen() {
                     size={280}
                     labels={["OVER 2.5", "BTTS", "2-3 GOALS", "LOW SCORE", "WIN PROB"]}
                     data={{
-                        "over_2.5": parsePctRaw(preds?.over25?.probability || preds?.over25?.confidence),
-                        "btts": parsePctRaw(preds?.btts?.probability || preds?.btts?.confidence),
-                        "2-3_goals": parsePctRaw(preds?.two_to_three_goals?.probability || preds?.two_to_three_goals?.confidence),
-                        "low_score": parsePctRaw(preds?.low_scoring?.probability || preds?.low_scoring?.confidence),
-                        "win_prob": parsePctRaw(preds?.match_winner?.probability || preds?.match_winner?.confidence)
+                        "over_2_5": parsePct(preds?.over25?.probability || preds?.over25?.confidence),
+                        "btts": parsePct(preds?.btts?.probability || preds?.btts?.confidence),
+                        "2-3_goals": parsePct(preds?.two_to_three_goals?.probability || preds?.two_to_three_goals?.confidence),
+                        "low_score": parsePct(preds?.low_scoring?.probability || preds?.low_scoring?.confidence),
+                        "win_prob": parsePct(preds?.match_winner?.probability || preds?.match_winner?.confidence)
                     }}
                 />
 
@@ -414,7 +414,7 @@ export default function MatchDetailScreen() {
                             <View style={styles.pickBoxTop}>
                                 <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
                                 <Text style={styles.pickBoxTitle}>{key.toUpperCase().replace(/_/g, ' ')}</Text>
-                                <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>{parsePctRaw(p.probability || p.confidence)}%</Text>
+                                <Text style={[styles.pickBoxPct, { color: '#34D399' }]}>{parsePct(p.probability || p.confidence)}%</Text>
                             </View>
                             <Text style={styles.pickBoxDesc}>{p.reason || 'AI qualifies this pick based on high-confidence algorithms.'}</Text>
                         </View>
@@ -432,7 +432,7 @@ export default function MatchDetailScreen() {
                             <View style={styles.pickBoxTop}>
                                 <Ionicons name="close-circle-outline" size={20} color="#9CA3AF" />
                                 <Text style={[styles.pickBoxTitle, { color: '#6B7280' }]}>{key.toUpperCase().replace(/_/g, ' ')}</Text>
-                                <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>{parsePctRaw(p.probability || p.confidence)}%</Text>
+                                <Text style={[styles.pickBoxPct, { color: '#4B5563' }]}>{parsePct(p.probability || p.confidence)}%</Text>
                             </View>
                             <Text style={styles.pickBoxDesc}>{p.reason || 'Low confidence score.'}</Text>
                         </View>

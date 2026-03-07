@@ -29,7 +29,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({ data, labels, size = 200
         }
 
         // For custom charts, we assume keys are lowercase versions of labels or specific keys
-        const key = label.toLowerCase().replace(/ /g, '_');
+        const key = label.toLowerCase().replace(/ /g, '_').replace(/\./g, '_');
         return (data[key] || 0) / 100;
     });
 
